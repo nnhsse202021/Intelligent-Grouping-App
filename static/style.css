@@ -14,5 +14,44 @@ body {
 #title {
   font-family: 'Montserrat', sans-serif;
   font-weight: normal;
-  color: var(--dark)
+  color: var(--dark);
+  font-size: 3em;
+}
+
+#login-container {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#loading-bar-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+}
+
+#loading-bar {
+  background-color: var(--accent);
+  height: 100%;
+  width: 0%;
+  transition: 0.5s all;
+}
+
+#app {
+  height: 0;
+  width: 100%;
+  opacity: 0;
+}
+
+#app.visible {
+  height: 100vh;
+  opacity: 1;
+  transition: height 0s 0s, opacity 0.3s 0s;
 }

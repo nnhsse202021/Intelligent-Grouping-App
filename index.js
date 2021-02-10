@@ -1,9 +1,11 @@
 // Imports \\
-const app = require(' express')();
+const app = require('express')();
 const http = require('http').createServer(app)
 const bodyParser = require('body-parser')
 const MongoClient = require('mongodb').MongoClient
 const dotenv = require('dotenv').config()
+const {OAuth2Client} = require('google-auth-library');
+const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID);
 
 // Constants \\
 const DBName = "GroupingDB"
@@ -15,6 +17,19 @@ app.use(bodyParser.json())
 // '/' endpoint handling
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/static/index.html')
+})
+
+app.post("/login", async (req, res) => {
+    let { token } = req.body;
+    console.log(process.env.CLIENT_ID)
+    let ticket = await oAuth2Client.verifyIdToken({
+        idToken: token,
+        audience: process.env.CLIENT_ID
+    })
+    console.log(ticket.getPayload())
+
+    /* put whatever session stuff you're using here */
+    res.json({status: true})
 })
 
 //serving files
