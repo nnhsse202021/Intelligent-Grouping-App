@@ -1,5 +1,5 @@
 // Imports \\
-const app = require('express')();
+const app = require(' express')();
 const http = require('http').createServer(app)
 const bodyParser = require('body-parser')
 const MongoClient = require('mongodb').MongoClient
@@ -30,12 +30,12 @@ http.listen(3000, function(){
 // Database \\
 
 
-const client = new MongoClient(URI, { useNewUrlParser: true, useUnifiedTopology: true })
-client.connect(err => {
-  if (err) console.log(err)
-  const collection = client.db("GroupingDB").collection("userData")
-  collection.insertOne({id: 1, count: 5}, (err, res) => {
-    if (err) console.log(err)
-    else console.log(res)
-  })
-})
+// const client = new MongoClient(URI, { useNewUrlParser: true, useUnifiedTopology: true })
+// client.connect(err => {
+//   if (err) console.log(err)
+//   const collection = client.db("GroupingDB").collection("userData")
+//   collection.insertOne({id: 1, count: 5}, (err, res) => {
+//     if (err) console.log(err)
+//     else console.log(res)
+//   })
+// })
