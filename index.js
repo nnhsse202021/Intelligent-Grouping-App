@@ -20,16 +20,12 @@ app.get('/', (req, res) => {
 })
 
 app.post("/login", async (req, res) => {
-    let { token } = req.body;
-    console.log(process.env.CLIENT_ID)
-    let ticket = await oAuth2Client.verifyIdToken({
-        idToken: token,
+    const ticket = await oAuth2Client.verifyIdToken({
+        idToken: req.body.token,
         audience: process.env.CLIENT_ID
     })
-    console.log(ticket.getPayload())
 
-    /* put whatever session stuff you're using here */
-    res.json({status: true})
+    res.json({status: true, user: ticket.getPayload()})
 })
 
 //serving files
@@ -54,3 +50,29 @@ http.listen(3000, function(){
 //     else console.log(res)
 //   })
 // })
+
+
+/*
+User
+{
+  _id: String,
+  classes: [
+    {
+      name: String,
+      students: [
+        {
+          id: Integer
+          name: String,
+          preferences: []
+        }
+      ]
+      groups: [
+        {
+          type: Integer,
+          groupings: [[]]
+        }
+      ]
+    }
+  ]
+}
+*/
