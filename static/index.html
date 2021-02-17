@@ -1,23 +1,55 @@
 <head>
-  <title>Intelligent Grouping</title>
-  <meta name="google-signin-client_id" content="245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet"><link rel="stylesheet" type="text/css" href="/static/style.css" />
+	<title>Intelligent Grouping</title>
+	<meta name="google-signin-client_id" content="245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+	<link rel="stylesheet"
+	 type="text/css" href="/static/style.css" />
 </head>
+
 <body>
-  <div id="loading-bar-container">
-    <div id="loading-bar"></div>
-  </div>
+	<div id="loading-bar-container">
+		<div id="loading-bar"></div>
+	</div>
+
+	<img id="spinner" src="/static/images/spinner.svg">
 
   <div id = "login-container">
     <h1 id="title">Intelligent Grouping</h1>
-    <div class="g-signin2" data-width=240 data-height=50 data-onsuccess="onSignIn" data-theme="dark" id="login-btn"></div>
+    <div id="login-btn"></div>
   </div>
 
   <div id="app">
     
+      
+    <div id="sidebar">
+      
+      <div id="profile-detail">
+        <h1 id = "username">name</h1>
+        
+      </div>  
+      
+      
+      <div id="class-list">
+        <button id="add-class-roster">+ Add Class</button>
+      </div>
+
+      <button id="logout">Log Out</button>
+        
+
+    </div>
+
+
+    
+    <div id="header">
+    </div>
+    
+    <div id="dashboard">
+      
+    </div>
+    
   </div>
 
+  <script src="https://apis.google.com/js/platform.js"></script>
   <script src="/static/script.js"></script>
-  <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
 </body>
