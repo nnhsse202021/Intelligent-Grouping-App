@@ -1,7 +1,10 @@
 :root {
-  --light-bg: #f0f0f0 ;
+  --light-bg: #f0f0f0;
+  --light-bg-alt: #fcfcfc;
+  --light-txt: #fafafa;
   --dark: #2e2e2e;
   --accent: #30a2ff;
+  --light-gray: #ebebeb;
   }
 
 * {
@@ -21,6 +24,7 @@ body {
   font-weight: normal;
   color: var(--dark);
   font-size: 3em;
+  text-align: center;
 }
 
 #loading-bar-container {
@@ -29,6 +33,7 @@ body {
   left: 0;
   height: 4px;
   width: 100%;
+  z-index: 99;
 }
 
 #loading-bar {
@@ -39,19 +44,20 @@ body {
 }
 
 #app {
-  height: 0;
   width: 100%;
   opacity: 0;
+  height: 100vh;
   transition: 0.3s all;
+  visibility: hidden;
   display: grid;
-  grid-template-columns: 15% auto;
-  grid-template-rows: 7.5% 5% auto;
+  grid-template-columns: 250px auto;
+  grid-template-rows: 71px 48px auto;
 }
 
 #app.visible {
-  height: 100vh;
+  visibility: visible;
   opacity: 1;
-  transition: height 0s 0s, opacity 0.3s 0s;
+  transition: visibility 0s 0s, opacity 0.3s 0s;
   background-color: var(--light-bg);
 }
 
@@ -64,15 +70,17 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 0;
+  visibility: hidden;
+  width: 80%;
+  height: 100vh;
   opacity: 0;
   transition: 0.3s all;
 }
 
 #login-container.visible {
-  height: 100vh;
+  visibility: visible;
   opacity: 1;
-  transition: height 0s 0s, opacity 0.3s 0s;
+  transition: visibility 0s 0s, opacity 0.3s 0s;
   background-color: var(--light-bg);
 }
 
@@ -86,60 +94,69 @@ body {
 }
 
 #profile-detail {
-  background: lightblue;
+  background: #30a2ff;
   grid-area: 1 / 1 / 3 /  2;
   display: grid;
   grid-template-columns: auto;
-  grid-template-rows: 60% auto;
-  
-
+  grid-template-rows: 64px auto;
 }
+
 #username {
   justify-self: center;
   align-self: center;
-  margin: 0%;
+  margin: 0;
+  color: var(--light-bg-alt);
+  font-weight: 500;
   grid-area: 1 / 1 / 2 / 1;
-  
 }
 
 #signout {
   justify-self : center;
-  align-self: center;
+  align-self: flex-start;
   grid-area: 2 / 1 / 3 /1;
-  width: 50%
+  width: 50%;
 }
 
-
-
-
 #header {
-  background-color: lightgreen;
-  
+  background-color: var(--dark);
   grid-area: 1 / 2 / 2 / 4;
 }
 
 #sidebar {
-  border-top: 2px solid #30a2ff;
   grid-area: 3 / 1 / 4 / 2;
+  background-color: var(--light-bg-alt);
+  padding: 20px 0;
 }
 
-#class-list 
-{
+.button {
+  background-color: transparent;
+  border: var(--accent) 3px solid;
+  color: var(--dark);
+  cursor: pointer;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 1.2em;
+  padding: 5px 0px;
+}
+
+.button.dark {
+  border: var(--light-bg-alt) 3px solid;
+  color: var(--light-bg-alt);
+}
+
+
+#class-list {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 
-#add-class-roster
-{
-  width: 50%;
+#add-class-roster {
+  width: 70%;
+  justify-self: center;
 }
 
-
-
-
 #dashboard {
-  border: 2px solid #30a2ff; 
   grid-area: 2 / 2 / 4 / 4;
 }

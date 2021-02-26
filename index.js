@@ -15,18 +15,21 @@ const URI = `mongodb+srv://GroupingApp:${process.env.DBPASS}@groupingapp.iz1de.m
 app.use(bodyParser.json())
 
 // '/' endpoint handling
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   res.sendFile(__dirname + '/static/index.html')
 })
 
 app.post("/login", async (req, res) => {
-    const ticket = await oAuth2Client.verifyIdToken({
-        idToken: req.body.token,
-        audience: process.env.CLIENT_ID
-    })
-
-    res.json({status: true, user: ticket.getPayload()})
+  //create user if not already existing
+  res.json(await verifyUser(req.body.token))
 })
+
+app.post("/addClass", async (req, res) => {
+  if (await verifyUser(req.body.token).status) {
+    //add class to user
+  }
+})
+
 
 //serving files
 app.use((req, res) => {
@@ -37,6 +40,17 @@ http.listen(3000, function(){
 	console.log('listening on *:3000')
 })
 
+
+async function verifyUser(token) {
+  const ticket = await oAuth2Client.verifyIdToken({
+      idToken: token,
+      audience: process.env.CLIENT_ID
+  }).catch(e => {
+    return {status: false}
+  })
+  console.log(ticket)
+  return {status: true, user: ticket.getPayload()}
+}
 
 // Database \\
 
