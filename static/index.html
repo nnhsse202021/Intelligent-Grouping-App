@@ -1,7 +1,51 @@
 <head>
-  <link rel="stylesheet" type="text/css" href="/static/style.css" />
+	<title>Intelligent Grouping</title>
+	<meta name="google-signin-client_id" content="245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+	<link rel="stylesheet"
+	 type="text/css" href="/static/style.css" />
 </head>
+
 <body>
-  <p>hello world</p>
+	<div id="loading-bar-container">
+		<div id="loading-bar"></div>
+	</div>
+
+	<img id="spinner" src="/static/images/spinner.svg">
+
+  <div id = "login-container">
+    <h1 id="title">Intelligent Grouping</h1>
+    <div id="login-btn"></div>
+  </div>
+
+  <div id="app">
+    
+    <div id="profile-detail">
+      <h1 id = "username">name</h1>
+      <button id="signout" class ="button dark">Sign Out</button>
+    </div>  
+  
+    <div id="sidebar">      
+      <div id="class-list">
+        
+        <label class="button" id="add-class-roster">
+          <input id="add-class-roster-input" type="file" hidden/>
+          + Add Class
+        </label>
+      </div>
+    </div>
+
+    <div id="header">
+      
+    </div>
+    
+    <div id="dashboard">
+      
+    </div>
+    
+  </div>
+
+  <script src="https://apis.google.com/js/platform.js"></script>
   <script src="/static/script.js"></script>
 </body>
