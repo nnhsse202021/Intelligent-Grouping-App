@@ -11,7 +11,7 @@ const classListDiv = document.getElementById("class-list")
 //-------\\
 
 // User Data (local) \\
-const classes = []
+let classes = []
 //-------\\
 
 // Loading Bar \\
@@ -105,15 +105,18 @@ gapi.load('auth2', () => {
 
 function signinChanged(val) {
   if (!val) {
-    auth2.signOut()
-    hide(app)
-    show(loginContainer)
+    signOut()
   }
 }
 
 async function signOut() {
   loadAround(async () => {
     await auth2.signOut()
+    hide(app)
+    show(loginContainer)
+    setTimeout(() => {
+      resetApp()
+    }, 300)
   })
 }
 
@@ -264,6 +267,18 @@ async function addClass(e) {
       }
     }
   })
+}
+
+function resetApp() {
+  username.innerText = ""
+  clearDiv(classListDiv)
+  classes = []
+}
+
+function clearDiv(div) {
+  while (div.firstChild) {
+    div.removeChild(div.firstChild);
+  }
 }
 
 // Event Listeners \\

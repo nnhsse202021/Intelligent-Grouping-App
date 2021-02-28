@@ -52,7 +52,7 @@ body {
   transition: 0.3s all;
   visibility: hidden;
   display: grid;
-  grid-template-columns: 250px auto;
+  grid-template-columns: 275px auto;
   grid-template-rows: 71px 48px auto;
 }
 
@@ -149,7 +149,6 @@ body {
   border: var(--light-bg-alt) 3px solid;
   color: var(--light-bg-alt);
 }
-
 
 #class-list {
   display: flex;
