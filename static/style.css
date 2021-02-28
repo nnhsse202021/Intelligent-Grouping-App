@@ -131,6 +131,7 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
+  overflow-y: auto;
 }
 
 .button {
@@ -162,6 +163,7 @@ body {
 #add-class {
   width: 70%;
   justify-self: center;
+  margin-bottom: 20px;
 }
 
 .class {
@@ -198,8 +200,8 @@ body {
   padding: 6px;
   border-width: 0 3px 3px 0;
   border-style: solid;
-  transform: rotate(-45deg);
-  -webkit-transform: rotate(-45deg);
+  transform: rotate(-45deg) translate(-3px, -3px);
+  -webkit-transform: rotate(-45deg) translate(-3px, -3px);
   background-color: var(--light-bg);
   border-color: var(--accent);
   transition: 0.2s;

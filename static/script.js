@@ -151,66 +151,60 @@ async function verify(user) {
 //-------\\
 
 async function constructClasses(file) {
-  const data = await file.text() //raw string data
+  let data = await file.text()
   const classObjs = []
-  //Derek Zhang assignment - 24 Feb 2021
-  //1. set the input to accept csv files only
-  //2. make sure file is valid format
-  //3. transform data into a array of JSON objects (there are many classes) from the file in the following format (IF VALID):
-  /*
-    [
-      {
-        id: String,
-        name: String,
-        period: String,
+  data = data.split("\n").map(x => x.split(","))
+  const required = ["Period","Course Number","Course Name","ID","Student Last Name","Student First Name","Student Middle Name"]
+
+  for(const element of required) {
+    if (!data[0].includes(element)) {
+      createError("Error: Invalid File Format")
+      return {valid: false}
+    }
+  }
+
+  data = data.slice(1, data.length - 1)
+
+  for (const row of data) {
+    let existing
+    for(const classObj of classObjs) {
+      if (classObj.id == row[2] && classObj.period == row[1]) {
+        existing = classObj
+      }      
+    }
+
+    if (existing) {
+      existing.students.push({
+        id: row[4],
+        first: row[6],
+        last: row[5],
+        middle: row[7][0],
+        preferences: []
+      })
+    } else {
+      classObjs.push({
+        id: row[2],
+        name: row[3],
+        period: +row[1],
         students: [
           {
-            id: String,
-            first: String,
-            last: String,
-            middle: String, (uppercase this)
+            id: row[4],
+            first: row[6],
+            last: row[5],
+            middle: row[7] ? row[7][0] : "",
             preferences: []
           }
         ],
         groups: []
-      }
-    ]
-  */
-  const placeholderClasses = [{
-    id: "324",
-    name: "Software Engineering",
-    period: "2",
-    students: [
-      {
-        id: "4324",
-        first: "joe",
-        last: "bob",
-        middle: "z",
-        preferences: []
-      }
-    ],
-    groups: []
-  },
-  {
-    id: "546",
-    name: "Computer Programming",
-    period: "3",
-    students: [
-      {
-        id: "4324",
-        first: "joe",
-        last: "bob",
-        middle: "z",
-        preferences: []
-      }
-    ],
-    groups: []
-  }]
-  return {valid: true, classObj: placeholderClass}
+      })
+    }   
+  }
+  
+  return {valid: true, classObjs: classObjs}
 }
 
-function saveClass(classObjs) {
-  return fetch("/addClass", {
+function saveClasses(classObjs) {
+  return fetch("/addClasses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -224,7 +218,7 @@ function saveClass(classObjs) {
 
 function addClassToUI(classObj) {
   const classElement = document.createElement("div")
-  classElement.classList = "class selected"
+  classElement.classList = "class"
   const classArrow = document.createElement("button")
   classArrow.classList = "class-arrow"
   const className = document.createElement("p")
@@ -234,9 +228,12 @@ function addClassToUI(classObj) {
   classElement.appendChild(className)
   const classElements = Array.from(classListDiv.children)
   if (classElements.length) {
-    for (let i = 0; i < classes.length; i++) {
-      
+    for (var i = 0; i < classes.length; i++) {
+      if (classObj.period < classes[i].period) {
+        break
+      }
     }
+    classListDiv.insertBefore(classElement, classElement[i])
   } else {
     classListDiv.appendChild(classElement)
   }
@@ -245,13 +242,22 @@ function addClassToUI(classObj) {
 async function addClass(e) {
   loadAround(async () => {
     if (addClassBtn.files[0]) {
-      const classResult = await constructClasses(addClassBtn.files[0])
+      const classesResult = await constructClasses(addClassBtn.files[0])
       addClassBtn.value = null
-      if (classResult.valid) {
-        const result = await saveClass(classResult.classObjs)
-        if (result.status) {
-          addClassToUI(classResult.classObj)
-          classes.push(classResult.classObj)
+      if (classesResult.valid) {
+        const saveResult = await saveClasses(classesResult.classObjs)
+        if (saveResult.status) {
+          console.log()
+          for (const classObj of saveResult.newClasses) {
+            addClassToUI(classObj)
+            for (var i = 0; i < classes.length; i++) {
+              if (classObj.period < classes[i].period) {
+                break
+              }
+            }
+            classes.splice(i, 0, classObj)
+            classes.push(classObj)
+          }
         } else {
           createError(result.error)
         }

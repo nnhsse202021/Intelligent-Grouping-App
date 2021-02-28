@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
     {
       id: String,
       name: String,
-      period: String,
+      period: Number,
       students: [
         {
           id: String,
@@ -76,15 +76,20 @@ app.get("/login", async (req, res) => {
   }
 })
 
-app.post("/addClass", async (req, res) => {
+app.post("/addClasses", async (req, res) => {
   const verification = await verifyUser(req.header("token"))
   if (verification.status) {
-    for (const classObj of classObjs)
-    if (!await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.classObj.id, period: req.body.classObj.period}}}).exec()) {
-      await User.updateOne({id: verification.user.sub}, {$push: {classes: req.body.classObj}})
-      res.json({status: true})
+    const newClasses = []
+    for (const classObj of req.body.classObjs) {
+      if (!await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: classObj.id, period: classObj.period}}}).exec()) {
+        await User.updateOne({id: verification.user.sub}, {$push: {classes: classObj}})
+        newClasses.push(classObj)
+      }
+    }
+    if (newClasses.length) {
+      res.json({status: true, newClasses: newClasses})
     } else {
-      res.json({status: false, error: "Error: Duplicate Class"})
+      res.json({status: false, error: "Error: All Duplicate Classes"})
     }
   }
 })
