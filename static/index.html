@@ -3,6 +3,7 @@
 	<meta name="google-signin-client_id" content="245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com">
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.0/css/all.css">
 	<link rel="stylesheet"
 	 type="text/css" href="/static/style.css" />
 </head>
@@ -20,33 +21,44 @@
   </div>
 
   <div id="app">
-    
     <div id="profile-detail">
       <h1 id = "username"></h1>
       <button id="signout" class ="button dark">Sign Out</button>
     </div>  
   
     <div id="sidebar">      
-      <div id="class-list">
-        
-        
-      </div>
-      <label class="button" id="add-class">
-          <input id="add-class-input" type="file" accept=".csv" hidden/>
-          + Add Classes
-        </label>
+      <div id="class-list"></div>
+      <button id="add-class" class="button">+ Add Class </button>
+      <input id="upload-class-input" type="file" accept=".csv" hidden/>
     </div>
 
-    <div id="header">
-      
-    </div>
+    <div id="header"></div>
     
     <div id="dashboard">
-      
+      <img id="app-spinner" src="/static/images/spinner.svg">
+      <div id="welcome-sec" class="section visible">
+        <h1 id="welcome">Welcome!</h1>
+      </div>
+      <div id="edit-class-sec" class="section">
+        <h1 id="class-info-title">Class Info</h1>
+        <label>
+          <input id="class-name-input" class="input" required>
+          <span>Class Name</span>
+        </label>
+        <label>
+        <input id="period-input" class="input" required>
+          <span>Class Period</span>
+        </label>
+        <h1 id="student-info-title">Student Info</h1>
+
+      </div>
     </div>
     
   </div>
 
   <script src="https://apis.google.com/js/platform.js"></script>
+  <script src="/static/md5.js"></script>
+  <script src="/static/ui.js"></script>
+  <script src="/static/auth.js"></script>
   <script src="/static/script.js"></script>
 </body>

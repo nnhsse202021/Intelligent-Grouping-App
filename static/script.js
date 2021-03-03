@@ -5,163 +5,29 @@ const app = document.getElementById("app")
 const loadingBar = document.getElementById("loading-bar")
 const signOutBtn = document.getElementById("signout")
 const username = document.getElementById("username")
-const addClassBtn = document.getElementById("add-class-input")
+const addClassBtn = document.getElementById("add-class")
 const classListDiv = document.getElementById("class-list")
-
+const uploadClassInput = document.getElementById("upload-class-input")
+const editClassSection = document.getElementById("edit-class-sec")
+const classNameInput = document.getElementById("class-name-input")
+const periodInput = document.getElementById("period-input")
 //-------\\
 
 // User Data (local) \\
-let classes = []
+let classes = {}
 //-------\\
-
-// Loading Bar \\
-async function loadAround(func) {
-  startLoad()
-  await func()
-  endLoad()
-}
-
-async function startLoad() {
-  clearTimeout(resetLoadTimeout)
-  loadingBar.style.width = "30%"
-  loadingBar.style.opacity = 1
-  loadingBar.style.height = "4px"
-}
-
-async function endLoad() {
-  loadingBar.style.width = "100%"
-  setTimeout(() => {
-    loadingBar.style.height = 0
-    loadingBar.style.opacity = 0
-    resetLoadTimeout = setTimeout(() => {
-      loadingBar.style.width = 0
-      setTimeout(() => {
-        loadingBar.style.opacity = 1
-        loadingBar.style.height = "4px"
-      }, 500)
-    }, 500)
-  }, 750)
-}
-
-async function show(element) {
-  element.classList.add("visible")
-}
-
-async function hide(element) {
-  element.classList.remove("visible")
-}
-let resetLoadTimeout
-
-//-------\\
-
-// Error Toast \\
-
-function createError(errorText) {
-  const errorElement = document.createElement("p")
-  errorElement.classList = "error"
-  errorElement.innerText = errorText
-  document.body.appendChild(errorElement)
-  errorElement.offsetHeight
-  errorElement.style.bottom = "8%"
-  setTimeout(() => {
-    errorElement.style.bottom = "0%"
-    setTimeout(() => {
-      document.body.removeChild(errorElement)
-    }, 600)
-  }, 5000)
-}
-
-//-------\\
-
-// Auth \\
-let auth2
 
 startLoad()
-gapi.load('auth2', () => {
-  auth2 = gapi.auth2.init({
-    client_id: '245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com'
-  })
-
-  auth2.then(() => {
-    if (!auth2.isSignedIn.get()) {
-      show(loginContainer)
-      endLoad()
-    }
-  })
-
-  gapi.signin2.render('login-btn', {
-    'scope': 'profile email',
-    'width': 240,
-    'height': 50,
-    'longtitle': true,
-    'theme': 'dark'
-  })
-
-  auth2.attachClickHandler('login-btn', {})
-
-  auth2.isSignedIn.listen(signinChanged)
-  auth2.currentUser.listen(userChanged)
-})
-
-function signinChanged(val) {
-  if (!val) {
-    signOut()
-  }
-}
-
-async function signOut() {
-  loadAround(async () => {
-    await auth2.signOut()
-    hide(app)
-    show(loginContainer)
-    setTimeout(() => {
-      resetApp()
-    }, 300)
-  })
-}
-
-async function userChanged(user) {
-  if (auth2.isSignedIn.get()) {
-    await loadAround(async () => {
-      const verification = await verify(user)
-      if (verification.status) {
-        if (verification.user.given_name) {
-          console.log(verification.user)
-          username.innerText = verification.user.given_name[0] + verification.user.family_name[0]
-        }
-        classes.push(...verification.classes)
-        for (const classObj of classes) {
-          addClassToUI(classObj)
-        }
-        hide(loginContainer)
-        show(app)
-      }
-    })
-  }
-}
-
-async function verify(user) {
-  const res = await fetch("/login", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      token: user.getAuthResponse().id_token
-    }
-  }).then(res => res.json())
-  return res
-}
-
-//-------\\
 
 async function constructClasses(file) {
   let data = await file.text()
   const classObjs = []
   data = data.split("\n").map(x => x.split(","))
-  const required = ["Period","Course Number","Course Name","ID","Student Last Name","Student First Name","Student Middle Name"]
+  const required = ["Period","Course Name","ID","Student Last Name","Student First Name","Student Middle Name"]
 
   for(const element of required) {
     if (!data[0].includes(element)) {
-      createError("Error: Invalid File Format")
+      createError("Invalid Format")
       return {valid: false}
     }
   }
@@ -170,8 +36,9 @@ async function constructClasses(file) {
 
   for (const row of data) {
     let existing
+    const hashedId = md5(row[3] + +row[1])
     for(const classObj of classObjs) {
-      if (classObj.id == row[2] && classObj.period == row[1]) {
+      if (classObj.id == hashedId) {
         existing = classObj
       }      
     }
@@ -186,7 +53,7 @@ async function constructClasses(file) {
       })
     } else {
       classObjs.push({
-        id: row[2],
+        id: hashedId,
         name: row[3],
         period: +row[1],
         students: [
@@ -226,47 +93,79 @@ function addClassToUI(classObj) {
   classArrow.classList = "class-arrow"
   const className = document.createElement("p")
   className.classList = "class-name"
+  classElement.setAttribute("class-id", classObj.id)
   className.innerText = `${classObj.name} P${classObj.period}`
   classElement.appendChild(classArrow)
   classElement.appendChild(className)
+  setUpClassEvents(classElement)
   const classElements = Array.from(classListDiv.children)
-  if (classElements.length) {
-    for (var i = 0; i < classes.length; i++) {
-      if (classObj.period < classes[i].period) {
-        break
-      }
-    }
-    classListDiv.insertBefore(classElement, classElement[i])
-  } else {
-    classListDiv.appendChild(classElement)
-  }
+  addList(classElement, classListDiv)
+  return classElement
 }
 
-async function addClass(e) {
+function setUpClassEvents(classElement) {
+  classElement.addEventListener("click", () => {
+    removeList(classElement)
+  })
+}
+
+async function addClass(classObj) {
+  classes[classObj.id] = {obj: classObj, element: addClassToUI(classObj)}
+}
+
+async function uploadClass() {
   loadAround(async () => {
-    if (addClassBtn.files[0]) {
-      const classesResult = await constructClasses(addClassBtn.files[0])
-      addClassBtn.value = null
+    if (uploadClassInput.files[0]) {
+      const classesResult = await constructClasses(uploadClassInput.files[0])
+      uploadClassInput.value = null
       if (classesResult.valid) {
         const saveResult = await saveClasses(classesResult.classObjs)
         if (saveResult.status) {
-          console.log()
           for (const classObj of saveResult.newClasses) {
-            addClassToUI(classObj)
-            for (var i = 0; i < classes.length; i++) {
-              if (classObj.period < classes[i].period) {
-                break
-              }
-            }
-            classes.splice(i, 0, classObj)
-            classes.push(classObj)
+            addClass(classObj)
           }
+          modalExit()
         } else {
-          createError(result.error)
+          createError(saveResult.error)
         }
       }
     }
   })
+}
+
+function showAddClassModal() {
+  createModal("small", (modal, exit) => {
+    modal.classList.add("add-class-modal")
+    const upload = document.createElement("button")
+    upload.classList = "button"
+    upload.innerText = "Upload Class"
+    const uploadIcon = document.createElement("i")
+    uploadIcon.classList = "fa fa-file-upload fa-3x"
+    upload.appendChild(uploadIcon)
+    upload.addEventListener("click", () => {uploadClassInput.click()})
+    const manual = document.createElement("button")
+    manual.classList = "button"
+    manual.innerText = "Manually Add Class"
+    const manualIcon = document.createElement("i")
+    manualIcon.classList = "fa fa-pen-square fa-3x"
+    manual.addEventListener("click", () => {
+      exit()
+      editClass()
+    })
+    manual.appendChild(manualIcon)
+    modal.appendChild(upload)
+    modal.appendChild(manual)
+  })
+}
+
+function editClass(classObj) {
+  switchSection(editClassSection)
+  if (classObj) {
+    
+  } else {
+    classNameInput.value = ""
+    periodInput.value = ""
+  }
 }
 
 function resetApp() {
@@ -275,13 +174,8 @@ function resetApp() {
   classes = []
 }
 
-function clearDiv(div) {
-  while (div.firstChild) {
-    div.removeChild(div.firstChild);
-  }
-}
-
 // Event Listeners \\
 signOutBtn.addEventListener("click", signOut)
-addClassBtn.addEventListener("change", addClass)
+addClassBtn.addEventListener("click", showAddClassModal)
+uploadClassInput.addEventListener("change", uploadClass)
 // })()

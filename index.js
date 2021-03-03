@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv').config()
 const {OAuth2Client} = require('google-auth-library');
 const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID);
+const crypto = require("crypto")
 
 // Constants \\
 const DBName = "data"
@@ -52,6 +53,8 @@ const userSchema = new mongoose.Schema({
   ]
 })
 
+
+
 const User = mongoose.model("User", userSchema)
 
 // Express \\
@@ -81,7 +84,7 @@ app.post("/addClasses", async (req, res) => {
   if (verification.status) {
     const newClasses = []
     for (const classObj of req.body.classObjs) {
-      if (!await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: classObj.id, period: classObj.period}}}).exec()) {
+      if (!await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: classObj.id}}}).exec()) {
         await User.updateOne({id: verification.user.sub}, {$push: {classes: classObj}})
         newClasses.push(classObj)
       }
@@ -89,7 +92,7 @@ app.post("/addClasses", async (req, res) => {
     if (newClasses.length) {
       res.json({status: true, newClasses: newClasses})
     } else {
-      res.json({status: false, error: "Error: All Duplicate Classes"})
+      res.json({status: false, error: "All Duplicate Classes - Make sure you're uploading new classes"})
     }
   }
 })
@@ -113,6 +116,67 @@ async function verifyUser(token) {
   })
   return {status: true, user: ticket.getPayload()}
 }
+
+
+function makeGroupByNumGroups(students, numGroups) {
+  let groups = []
+  for (let i = 0; i < numGroups; i++) {
+    groups.push([])
+  }
+
+  let counter = 0
+  while (students.length) {
+    const randomIndex = Math.floor(Math.random() * students)
+    groups[counter].push(students[randomIndex])
+    students.splice(randomIndex, 1)
+    counter = (counter+1) % groups.length
+  }
+  return groups
+}
+
+function makeGroupByNumStudents(students, numStudents) {
+  students = [...students]
+  let groups = []
+  let numGroups = Math.floor(students.length/numStudents)
+  if ((students.length % numStudents > numStudents / 2 || students % numStudents > numGroups / 2)) {
+    numGroups += 1
+  }
+  
+  for (let i = 0; i < numGroups; i++) {
+    groups.push([])
+  }
+
+  let counter = 0
+  
+  while (students.length) {
+    const randomIndex = Math.floor(Math.random() * students.length)
+    groups[counter].push(students[randomIndex])
+    students.splice(randomIndex, 1)
+    counter = (counter+1) % groups.length
+  }
+  
+  const avg = groups.reduce((a, b) => a + b.length, 0) / groups.length
+  console.log(avg)
+
+  // if (avg > numStudents + 0.5 || avg < numStudents - 0.5) {
+  //   console.log("weird")
+  // }
+
+  return groups
+}
+
+
+
+
+// mean the #s group > groups of x => warning
+
+// greater > x => Warning
+
+
+// < Half > Merge last group
+
+
+
 
 /*
 User Schema
