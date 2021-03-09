@@ -97,6 +97,24 @@ app.post("/addClasses", async (req, res) => {
   }
 })
 
+app.post("/editClasses", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const newClasses = []
+    for (const classObj of req.body.classObjs) {
+      if (!await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: classObj.id}}}).exec()) {
+        await User.updateOne({id: verification.user.sub}, {$push: {classes: classObj}})
+        newClasses.push(classObj)
+      }
+    }
+    if (newClasses.length) {
+      res.json({status: true, newClasses: newClasses})
+    } else {
+      res.json({status: false, error: "All Duplicate Classes - Make sure you're uploading new classes"})
+    }
+  }
+})
+
 app.use((req, res) => {
   res.sendFile(__dirname + req.url)
 })
@@ -118,7 +136,8 @@ async function verifyUser(token) {
 }
 
 
-function makeGroupByNumGroups(students, numGroups) {
+function makeGroupsByNumGroups(students, numGroups) {
+  students = [...students]
   let groups = []
   for (let i = 0; i < numGroups; i++) {
     groups.push([])
@@ -126,7 +145,7 @@ function makeGroupByNumGroups(students, numGroups) {
 
   let counter = 0
   while (students.length) {
-    const randomIndex = Math.floor(Math.random() * students)
+    const randomIndex = Math.floor(Math.random() * students.length)
     groups[counter].push(students[randomIndex])
     students.splice(randomIndex, 1)
     counter = (counter+1) % groups.length
@@ -134,7 +153,7 @@ function makeGroupByNumGroups(students, numGroups) {
   return groups
 }
 
-function makeGroupByNumStudents(students, numStudents) {
+function makeGroupsByNumStudents(students, numStudents) {
   students = [...students]
   let groups = []
   let numGroups = Math.floor(students.length/numStudents)

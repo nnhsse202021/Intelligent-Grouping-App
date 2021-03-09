@@ -9,20 +9,71 @@ const addClassBtn = document.getElementById("add-class")
 const classListDiv = document.getElementById("class-list")
 const uploadClassInput = document.getElementById("upload-class-input")
 const editClassSection = document.getElementById("edit-class-sec")
+const welcomeSection = document.getElementById("welcome-sec")
+const classInfoInputs = document.getElementById("class-info-inputs")
 const classNameInput = document.getElementById("class-name-input")
 const periodInput = document.getElementById("period-input")
+const statusTitle = document.getElementById("status-title")
+const studentInfoInputs = document.getElementById("student-info-inputs")
+const addStudentBtn = document.getElementById("add-student")
+const saveClassBtn = document.getElementById("save-class")
+const cancelClassBtn = document.getElementById("cancel-class")
 //-------\\
 
-// User Data (local) \\
+// Data (local) \\
 let classes = {}
+let state = {mode: 0, info: {}}
+/*
+0 = logged out
+1 = dashboard
+2 = adding class manually
+3 = editing class manually
+4 = class view
+*/
 //-------\\
 
 startLoad()
 
-async function constructClasses(file) {
+function setState(mode, info={}) {
+  state.mode = mode
+  state.info = info
+}
+
+function constructClassFromManual() {
+  const classObj = {}
+
+  classObj.name = classNameInput.value;
+  
+  classObj.id = md5(classNameInput.value + +periodInput.value)
+  classObj.period = periodInput.value
+  classObj.students = []
+  
+  for (const inputGroup of Array.from(studentInfoInputs.children)) {
+    if (!inputGroup.classList.contains("sizeholder")) {
+      const student = {}
+      for (let input of Array.from(inputGroup.children).slice(0,-1)) {
+        input = input.children[0]
+        if (input.classList.contains("first-name-input")) {
+          student.firstName = input.value
+        } else if (input.classList.contains("last-name-input")) {
+          student.lastName = input.value
+        } else if (input.classList.contains("middle-initial-input")) {
+          student.middleInitial = input.value ? input.value : null
+        } else if (input.classList.contains("student-id-input")) {
+          student.id = input.value
+        }
+      }
+      classObj.students.push(student)
+    }
+  }
+  return classObj
+}
+
+
+async function constructClassesFromFile(file) {
   let data = await file.text()
   const classObjs = []
-  data = data.split("\n").map(x => x.split(","))
+  data = data.split("\n").map(r => r.split(","))
   const required = ["Period","Course Name","ID","Student Last Name","Student First Name","Student Middle Name"]
 
   for(const element of required) {
@@ -73,7 +124,7 @@ async function constructClasses(file) {
   return {valid: true, classObjs: classObjs}
 }
 
-function saveClasses(classObjs) {
+function saveNewClasses(classObjs) {
   return fetch("/addClasses", {
     method: "POST",
     headers: {
@@ -82,6 +133,19 @@ function saveClasses(classObjs) {
     },
     body: JSON.stringify({
       classObjs: classObjs
+    })
+  }).then(res => res.json())
+}
+
+function saveEditedClass(classObj) {
+  return fetch("/editClasses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
+      classObj: classObj
     })
   }).then(res => res.json())
 }
@@ -116,10 +180,10 @@ async function addClass(classObj) {
 async function uploadClass() {
   loadAround(async () => {
     if (uploadClassInput.files[0]) {
-      const classesResult = await constructClasses(uploadClassInput.files[0])
+      const classesResult = await constructClassesFromFile(uploadClassInput.files[0])
       uploadClassInput.value = null
       if (classesResult.valid) {
-        const saveResult = await saveClasses(classesResult.classObjs)
+        const saveResult = await saveNewClasses(classesResult.classObjs)
         if (saveResult.status) {
           for (const classObj of saveResult.newClasses) {
             addClass(classObj)
@@ -159,13 +223,131 @@ function showAddClassModal() {
 }
 
 function editClass(classObj) {
-  switchSection(editClassSection)
   if (classObj) {
-    
+    statusTitle.innerText = "Edit Class"
+    setState(3, classObj.id)
   } else {
+    statusTitle.innerText = "Create Class"
     classNameInput.value = ""
     periodInput.value = ""
+    classNameInput.classList.remove("invalid")
+    periodInput.classList.remove("invalid")
+    clearDiv(studentInfoInputs)
+    setState(2)
   }
+  switchSection(editClassSection)
+}
+
+function addStudentInputs() {
+  const studentInfoContainer = document.createElement("div")
+  studentInfoContainer.classList = "student-info-container"
+  studentInfoContainer.appendChild(createPlaceholderInput("First Name", "first-name-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("Last Name", "last-name-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("Middle Initial", "middle-initial-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("ID", "student-id-input"))
+  const removeStudent = document.createElement("i")
+  removeStudent.classList = "fas fa-times-circle fa-2x remove-student"
+  removeStudent.addEventListener("click", () => {
+    removeList(studentInfoContainer)
+  })
+  studentInfoContainer.appendChild(removeStudent)
+  addList(studentInfoContainer, studentInfoInputs)
+}
+
+function validateClassInputs() {
+  let status = {valid: true}
+  for (const input of Array.from(classInfoInputs.children)) {
+    if (input.children[0].value == "") {
+      input.children[0].classList.add("invalid")
+      status = {valid: false, error: "Please fill out all fields"}
+    } else {
+      input.children[0].classList.remove("invalid")
+    }
+  }
+
+  if (!status.valid) return status
+
+  if (Array.from(studentInfoInputs.children).length == 1) {
+    return {valid: false, error: "Please add at least one student"}
+  }
+
+  for (const inputGroup of Array.from(studentInfoInputs.children)) {
+    if (!inputGroup.classList.contains("sizeholder")) {
+      for (let input of Array.from(inputGroup.children).slice(0,-1)) {
+        input = input.children[0]
+        if (!input.classList.contains("middle-initial-input") && input.value == "") {
+          input.classList.add("invalid")
+          status = {valid: false, error: "Please fill out all fields"}
+        } else {
+          input.classList.remove("invalid")
+        }
+      }
+    }
+  }
+
+  if (!status.valid) return status
+
+  if (Object.keys(classes).includes(md5(classNameInput.value + periodInput.value))) {
+    classNameInput.classList.add("invalid")
+    return {valid: false, error: "Duplicate Class"}
+  } else {
+    classNameInput.classList.remove("invalid")
+  }
+
+  const studentIds = []
+  for (const inputGroup of Array.from(studentInfoInputs.children)) {
+    for (let input of Array.from(inputGroup.children).slice(0,-1)) {
+      input = input.children[0]
+      if (input.classList.contains("student-id-input")) {
+        if (studentIds.includes(input.value)) {
+          input.classList.add("invalid")
+          status = {valid: false, error: "Duplicate Student IDs"}
+        } else {
+          studentIds.push(input.value)
+          input.classList.remove("invalid")
+        }
+      }
+    }
+  }
+  
+  return status
+}
+
+function exitEdit() {
+  switchSection(welcomeSection)
+  statusTitle.innerText = "Dashboard"
+  setState(1)
+}
+
+function saveClassAdd() {
+  const status = validateClassInputs()
+  if (status.valid) {
+    const classObj = constructClassFromManual()
+    saveNewClasses([classObj])
+    addClass(classObj)
+    exitEdit()
+    switchSection(welcomeSection)
+  } else {
+    createError(status.error)
+  }
+}
+
+function saveClassEdit() {
+
+}
+
+function createPlaceholderInput(text, inputClassName) {
+  const labelContainer = document.createElement("label")
+  labelContainer.classList = "label"
+  const input = document.createElement("input")
+  input.classList.add("input")
+  input.classList.add(inputClassName)
+  input.required = true
+  const span = document.createElement("span")
+  span.innerText = text
+  labelContainer.appendChild(input)
+  labelContainer.appendChild(span)
+  return labelContainer
 }
 
 function resetApp() {
@@ -178,4 +360,13 @@ function resetApp() {
 signOutBtn.addEventListener("click", signOut)
 addClassBtn.addEventListener("click", showAddClassModal)
 uploadClassInput.addEventListener("change", uploadClass)
+addStudentBtn.addEventListener("click", addStudentInputs)
+saveClassBtn.addEventListener("click", () => {
+  if (state.mode == 2) {
+    saveClassAdd()
+  } else if (state.mode == 3) {
+    saveClassEdit()
+  }
+})
+cancelClassBtn.addEventListener("click", exitEdit)
 // })()

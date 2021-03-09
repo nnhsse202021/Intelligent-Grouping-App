@@ -6,7 +6,8 @@
   --accent: #30a2ff;
   --light-gray: #bebebe;
   --error: #ff5166;
-  }
+  --placeholder: #a3a3a3
+}
 
 * {
   font-family: 'Montserrat', sans-serif;
@@ -27,6 +28,7 @@ body {
   color: var(--dark);
   font-size: 3em;
   text-align: center;
+
 }
 
 #loading-bar-container {
@@ -52,8 +54,8 @@ body {
   transition: 0.3s all;
   visibility: hidden;
   display: grid;
-  grid-template-columns: 275px auto;
-  grid-template-rows: 71px 48px auto;
+  grid-template-columns: 300px auto;
+  grid-template-rows: 75px 50px auto;
 }
 
 #app.visible {
@@ -95,6 +97,10 @@ body {
   z-index: -1;
 }
 
+#logo{
+  height: 125px;
+}
+
 #app-spinner {
   height: 250px;
   position: absolute;
@@ -130,6 +136,11 @@ body {
 #header {
   background-color: var(--dark);
   grid-area: 1 / 2 / 2 / 4;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 25px;
 }
 
 #sidebar {
@@ -149,7 +160,7 @@ body {
   cursor: pointer;
   text-align: center;
   border-radius: 8px;
-  font-size: 1.2em;
+  font-size: 1.3em;
   padding: 5px 0px;
   outline: none;
 }
@@ -167,6 +178,7 @@ body {
   width: 100%;
   padding: 12px 0;
 }
+
 
 #add-class {
   width: 70%;
@@ -203,7 +215,7 @@ body {
 
 .class-name {
   margin: 0 0 0 16px;
-  font-size: 1.2em;
+  font-size: 1.3em;
   color: var(--dark);
 }
 
@@ -216,7 +228,7 @@ body {
   -webkit-transform: rotate(-45deg) translate(-3px, -3px);
   background-color: var(--light-bg);
   border-color: var(--accent);
-  transition: 0.3s;
+  transition: 0.3s all;
 }
 
 .class.selected > .class-name {
@@ -233,7 +245,7 @@ body {
 .error {
   background-color: var(--error);
   position: absolute;
-  bottom: 0%;
+  top: 0px;
   left: 50%;
   border-radius: 8px;
   color: white;
@@ -243,7 +255,8 @@ body {
   text-align: center;
   transition: 0.6s cubic-bezier(.76,-0.47,.24,1.47);
   z-index: 100;
-  transform: translate(calc(-50% + 125px), 100%);
+  transform: translate(calc(-50% + 125px), -100%);
+  box-shadow: 0 0 10px var(--dark);
 }
 
 .abcRioButtonIcon {
@@ -256,12 +269,18 @@ body {
 }
 
 .hidden {
-  height:0 !important;
-  padding-top: 0;
-  padding-bottom: 0;
-  margin-top: 0;
-  margin-bottom: 0;
-  opacity: 0;
+  height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  opacity: 0 !important;
+  border-width: 0 !important;
+}
+
+.hidden > * {
+  transition: 0.3s all;
+  opacity: 0 !important;
 }
 
 .section {
@@ -274,6 +293,7 @@ body {
   visibility: hidden;
   opacity: 0;
   transition: 0.3s all;
+  padding: 50px 25px;
 }
 
 .section.visible {
@@ -390,20 +410,20 @@ body {
 }
 
 .input {
-  background-color: transparent;
-  border: var(--dark) 3px solid;
+  background-color: var(--light-bg-alt);
+  border: var(--dark) 2px solid;
   color: var(--dark);
   cursor: pointer;
   text-align: left;
   border-radius: 8px;
-  font-size: 1.2em;
-  padding: 5px 8px;
+  font-size: 1.5em;
+  padding: 8px 12px;
   transition: 0.3s all;
   outline: none;
 }
 
 .input:focus {
-  border: var(--accent) 3px solid;
+  border: var(--accent) 2px solid;
 }
 
 label {
@@ -413,15 +433,121 @@ label {
 label > span {
   position: absolute;
   padding: 0 5px;
-  left: 3px;
-  background-color: var(--light-bg);
-  top: -3px;
+  left: 12px;
+  background-color: var(--light-bg-alt);
+  top: -8px;
   border-radius: 20px;
-  font-size: 1.2em;
+  font-size: 1.5em;
   transition: 0.2s all;
   pointer-events: none;
+  color: var(--placeholder);
 }
 
 .input:focus + span, .input:valid + span {
-  transform: scale(0.75) translate(-9px, -27px);
+  transform: scale(0.75) translate(-9px, -32px);
+  color: var(--dark);
+}
+
+#class-info-inputs > label > input {
+  margin: 0 5px 12px 5px;
+}
+
+#class-name-input {
+  width: 350px;
+}
+
+#period-input {
+  width: 150px;
+}
+
+h1.large {
+  font-size: 3em;
+}
+
+h1.medium {
+  font-size: 2em;
+}
+
+h1 {
+  color: var(--dark);
+}
+
+#status-title {
+  margin: 0;
+  color:white;
+}
+
+#edit-class-sec {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  overflow: auto;
+}
+
+#add-student {
+  padding: 5px 20px;
+}
+
+.student-info-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--light-gray);
+  flex-wrap: wrap;
+  transition: 0.3s all;
+}
+
+.student-info-container > * {
+  padding-left: 10px;
+  padding-bottom: 12px;
+}
+
+.first-name-input, .last-name-input {
+  width: 250px;
+}
+
+.middle-initial-input {
+  width: 200px;
+}
+
+.student-id-input {
+  width: 175px;
+}
+
+.remove-student {
+  cursor: pointer
+}
+
+.student-info-container > label > span {
+  top: 10px;
+  left: 18px;
+}
+
+.sizeholder {
+  height: 0;
+  overflow-y: hidden;
+  margin: 0;
+  border: 0;
+}
+
+.invalid {
+  border-color: var(--error);
+}
+
+#edit-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 25px;
+}
+
+#edit-actions button {
+  font-size: 1.5em;
+  padding: 5px 30px;
+  margin: 0 10px;
 }

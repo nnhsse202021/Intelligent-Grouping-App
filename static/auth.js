@@ -36,6 +36,7 @@ async function signOut() {
     await auth2.signOut()
     hideFade(app)
     showFade(loginContainer)
+    setState(0)
     setTimeout(() => {
       resetApp()
     }, 300)
@@ -43,7 +44,7 @@ async function signOut() {
 }
 
 async function userChanged(user) {
-  if (auth2.isSignedIn.get()) {
+  if (auth2.isSignedIn.get() && state.mode == 0) {
     await loadAround(async () => {
       const verification = await verify(user)
       if (verification.status) {
@@ -56,6 +57,7 @@ async function userChanged(user) {
         }
         hideFade(loginContainer)
         showFade(app)
+        setState(1)
       }
     })
   }

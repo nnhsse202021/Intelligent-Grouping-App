@@ -31,8 +31,9 @@ function createModal(size, construct, cancel = () => {}) {
 }
 
 function clearDiv(div) {
-  while (div.firstChild) {
-    div.removeChild(div.firstChild);
+  for (const child of Array.from(div.children))
+  if (!child.classList || !child.classList.contains("sizeholder")) {
+    div.removeChild(child)
   }
 }
 
@@ -67,6 +68,7 @@ function switchSection(to) {
 
 function removeList(element) {
   element.style.height = element.clientHeight + "px"
+  element.style.opacity = 1
   element.offsetHeight
   element.classList.add("hidden")
   setTimeout(() => {
@@ -81,7 +83,10 @@ function addList(element, target) {
   target.appendChild(element)
   element.offsetHeight
   element.classList.remove("hidden")
-  element.style.height = "auto"
+  setTimeout(() => {
+    element.style.height = "auto"
+  }, 300)
+ 
 }
 
 function createError(errorText) {
@@ -90,9 +95,9 @@ function createError(errorText) {
   errorElement.innerText = "Error: " + errorText
   document.body.appendChild(errorElement)
   errorElement.offsetHeight
-  errorElement.style.bottom = "100px"
+  errorElement.style.top = "55px"
   setTimeout(() => {
-    errorElement.style.bottom = "0"
+    errorElement.style.top = "0"
     setTimeout(() => {
       document.body.removeChild(errorElement)
     }, 600)
