@@ -18,6 +18,11 @@ const studentInfoInputs = document.getElementById("student-info-inputs")
 const addStudentBtn = document.getElementById("add-student")
 const saveClassBtn = document.getElementById("save-class")
 const cancelClassBtn = document.getElementById("cancel-class")
+const viewClassSection = document.getElementById("view-class-sec")
+const infoPanelClassName = document.getElementById("info-panel-class")
+const infoPanelNumStudents = document.getElementById("info-panel-num-students")
+const infoPanelNumGroups = document.getElementById("info-panel-num-groups")
+const editClassBtn = document.getElementById("edit-class")
 //-------\\
 
 // Data (local) \\
@@ -68,6 +73,7 @@ function constructClassFromManual() {
   }
   return classObj
 }
+
 
 
 async function constructClassesFromFile(file) {
@@ -157,7 +163,7 @@ function addClassToUI(classObj) {
   classArrow.classList = "class-arrow"
   const className = document.createElement("p")
   className.classList = "class-name"
-  classElement.setAttribute("class-id", classObj.id)
+  classElement.setAttribute("id", classObj.id)
   className.innerText = `${classObj.name} P${classObj.period}`
   classElement.appendChild(classArrow)
   classElement.appendChild(className)
@@ -169,12 +175,26 @@ function addClassToUI(classObj) {
 
 function setUpClassEvents(classElement) {
   classElement.addEventListener("click", () => {
-    removeList(classElement)
+    for (const element of Array.from(classListDiv.children)) {
+      if (element != classElement) {
+        element.classList.remove("selected")
+      } else {
+        element.classList.add("selected")
+      }
+    }
+    switchSection(viewClassSection)
+    let selectedClass = classes[classElement.id].obj
+    statusTitle.innerText = "View Class"
+    setState(4, selectedClass.id)
+    infoPanelClassName.innerText = `${selectedClass.name}  P${selectedClass.period}`
+    infoPanelNumStudents.innerText = `${selectedClass.students.length} Students`
+    infoPanelNumGroups.innerText = `${selectedClass.groups.length} Groups`
   })
 }
 
 async function addClass(classObj) {
-  classes[classObj.id] = {obj: classObj, element: addClassToUI(classObj)}
+  classes[classObj.id] = {obj: classObj}
+  classes[classObj.id].element = addClassToUI(classObj)
 }
 
 async function uploadClass() {
