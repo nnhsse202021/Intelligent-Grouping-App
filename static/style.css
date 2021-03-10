@@ -5,7 +5,7 @@
   --dark: #2e2e2e;
   --accent: #30a2ff;
   --light-gray: #bebebe;
-  --lighter-gray: #e3e3e3;
+  --lighter-gray: #d3d3d3;
   --error: #ff5166;
   --placeholder: #a3a3a3
 }
@@ -602,7 +602,7 @@ h1 {
   text-align: center;
 }
 
-#edit-class {
+#edit-class, #delete-class {
   width: 60%;
 }
 

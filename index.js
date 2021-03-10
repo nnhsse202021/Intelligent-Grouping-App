@@ -92,25 +92,40 @@ app.post("/addClasses", async (req, res) => {
     if (newClasses.length) {
       res.json({status: true, newClasses: newClasses})
     } else {
-      res.json({status: false, error: "All Duplicate Classes - Make sure you're uploading new classes"})
+      res.json({status: false, error: "All Duplicate Classes - Make sure you are uploading new classes"})
     }
   }
 })
 
-app.post("/editClasses", async (req, res) => {
+app.post("/editClass", async (req, res) => {
   const verification = await verifyUser(req.header("token"))
   if (verification.status) {
-    const newClasses = []
-    for (const classObj of req.body.classObjs) {
-      if (!await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: classObj.id}}}).exec()) {
-        await User.updateOne({id: verification.user.sub}, {$push: {classes: classObj}})
-        newClasses.push(classObj)
-      }
-    }
-    if (newClasses.length) {
-      res.json({status: true, newClasses: newClasses})
+    const classObj = req.body.classObj
+    const user = await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.oldId}}}).exec()
+    if (user) {
+      const existingClassObj = user.classes.find(c => c.id == req.body.oldId)
+      existingClassObj.id = classObj.id
+      existingClassObj.name = classObj.name
+      existingClassObj.period = classObj.period
+      existingClassObj.students = classObj.students
+      await user.save()
+      res.json({status: true, updatedClass: existingClassObj})
     } else {
-      res.json({status: false, error: "All Duplicate Classes - Make sure you're uploading new classes"})
+      res.json({status: false, error: "The class you are editing does not exist - Please reload"})
+    }
+  }
+})
+
+app.post("/deleteClass", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.id}}}).exec()
+    if (user) {
+      user.classes.splice(user.classes.indexOf(user.classes.find(c => c.id == req.body.id)), 1)
+      await user.save()
+      res.json({status: true})
+    } else {
+      res.json({status: false, error: "No Class Found"})
     }
   }
 })
