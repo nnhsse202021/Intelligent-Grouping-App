@@ -132,4 +132,10 @@ async function endLoad() {
   }, 750)
 }
 
+function deselectAllClasses() {
+  for (const element of Array.from(classListDiv.children)) {
+    element.classList.remove("selected")
+  }
+}
+
 let resetLoadTimeout

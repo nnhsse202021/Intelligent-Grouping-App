@@ -23,6 +23,7 @@ const infoPanelClassName = document.getElementById("info-panel-class")
 const infoPanelNumStudents = document.getElementById("info-panel-num-students")
 const infoPanelNumGroups = document.getElementById("info-panel-num-groups")
 const editClassBtn = document.getElementById("edit-class")
+const deleteClassBtn = document.getElementById("delete-class")
 //-------\\
 
 // Data (local) \\
@@ -45,7 +46,7 @@ function setState(mode, info={}) {
 }
 
 function constructClassFromManual() {
-  const classObj = {}
+  const classObj = {groups: []}
 
   classObj.name = classNameInput.value;
   
@@ -59,11 +60,11 @@ function constructClassFromManual() {
       for (let input of Array.from(inputGroup.children).slice(0,-1)) {
         input = input.children[0]
         if (input.classList.contains("first-name-input")) {
-          student.firstName = input.value
+          student.first = input.value
         } else if (input.classList.contains("last-name-input")) {
-          student.lastName = input.value
+          student.last = input.value
         } else if (input.classList.contains("middle-initial-input")) {
-          student.middleInitial = input.value ? input.value : null
+          student.middle = input.value
         } else if (input.classList.contains("student-id-input")) {
           student.id = input.value
         }
@@ -73,8 +74,6 @@ function constructClassFromManual() {
   }
   return classObj
 }
-
-
 
 async function constructClassesFromFile(file) {
   let data = await file.text()
@@ -144,14 +143,15 @@ function saveNewClasses(classObjs) {
 }
 
 function saveEditedClass(classObj) {
-  return fetch("/editClasses", {
+  return fetch("/editClass", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       token: auth2.currentUser.get().getAuthResponse().id_token
     },
     body: JSON.stringify({
-      classObj: classObj
+      classObj: classObj,
+      oldId: state.info.id
     })
   }).then(res => res.json())
 }
@@ -181,15 +181,19 @@ function setUpClassEvents(classElement) {
       } else {
         element.classList.add("selected")
       }
+      showClass(classElement.id)
     }
-    switchSection(viewClassSection)
-    let selectedClass = classes[classElement.id].obj
-    statusTitle.innerText = "View Class"
-    setState(4, selectedClass.id)
-    infoPanelClassName.innerText = `${selectedClass.name}  P${selectedClass.period}`
-    infoPanelNumStudents.innerText = `${selectedClass.students.length} Students`
-    infoPanelNumGroups.innerText = `${selectedClass.groups.length} Groups`
   })
+}
+
+function showClass(id) {
+  switchSection(viewClassSection)
+  let selectedClass = classes[id].obj
+  statusTitle.innerText = "View Class"
+  setState(4, {id: selectedClass.id})
+  infoPanelClassName.innerText = `${selectedClass.name}  P${selectedClass.period}`
+  infoPanelNumStudents.innerText = `${selectedClass.students.length} Students`
+  infoPanelNumGroups.innerText = `${selectedClass.groups.length} Groups`
 }
 
 async function addClass(classObj) {
@@ -245,26 +249,35 @@ function showAddClassModal() {
 function editClass(classObj) {
   if (classObj) {
     statusTitle.innerText = "Edit Class"
-    setState(3, classObj.id)
+    classNameInput.value = classObj.obj.name
+    periodInput.value = classObj.obj.period
+    classNameInput.classList.remove("invalid")
+    periodInput.classList.remove("invalid")
+    clearDiv(studentInfoInputs)
+    for (const student of classObj.obj.students) {
+      addStudentInputs(student)
+    }
+    setState(3, {id: classObj.obj.id})
   } else {
     statusTitle.innerText = "Create Class"
     classNameInput.value = ""
     periodInput.value = ""
     classNameInput.classList.remove("invalid")
     periodInput.classList.remove("invalid")
+    deselectAllClasses()
     clearDiv(studentInfoInputs)
     setState(2)
   }
   switchSection(editClassSection)
 }
 
-function addStudentInputs() {
+function addStudentInputs(student) {
   const studentInfoContainer = document.createElement("div")
   studentInfoContainer.classList = "student-info-container"
-  studentInfoContainer.appendChild(createPlaceholderInput("First Name", "first-name-input"))
-  studentInfoContainer.appendChild(createPlaceholderInput("Last Name", "last-name-input"))
-  studentInfoContainer.appendChild(createPlaceholderInput("Middle Initial", "middle-initial-input"))
-  studentInfoContainer.appendChild(createPlaceholderInput("ID", "student-id-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("First Name", "first-name-input", student ? student.first : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("Last Name", "last-name-input", student ? student.last : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("Middle Initial", "middle-initial-input", student ? student.middle : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("ID", "student-id-input", student ? student.id : ""))
   const removeStudent = document.createElement("i")
   removeStudent.classList = "fas fa-times-circle fa-2x remove-student"
   removeStudent.addEventListener("click", () => {
@@ -307,7 +320,7 @@ function validateClassInputs() {
 
   if (!status.valid) return status
 
-  if (Object.keys(classes).includes(md5(classNameInput.value + periodInput.value))) {
+  if (state.mode == 2 && Object.keys(classes).includes(md5(classNameInput.value + periodInput.value))) {
     classNameInput.classList.add("invalid")
     return {valid: false, error: "Duplicate Class"}
   } else {
@@ -333,36 +346,89 @@ function validateClassInputs() {
   return status
 }
 
-function exitEdit() {
-  switchSection(welcomeSection)
-  statusTitle.innerText = "Dashboard"
-  setState(1)
+function deleteClassFromDB(id) {
+  return fetch("/deleteClass", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
+      id: id
+    })
+  }).then(res => res.json())
 }
 
-function saveClassAdd() {
+async function deleteClass(id) {
+  const deleteResult = await deleteClassFromDB(id)
+  if (deleteResult.status) {
+    classListDiv.removeChild(classes[id].element)
+    delete classes[id]
+    statusTitle.innerText = "Dashboard"
+    switchSection(welcomeSection)
+  } else {
+    createError(deleteResult.error)
+  }
+}
+
+function exitEdit() {
+  if (state.mode == 3) {
+    showClass(state.info.id)
+  } else {
+    switchSection(welcomeSection)
+    statusTitle.innerText = "Dashboard"
+    setState(1)
+  }
+}
+
+async function completeClassAdd() {
   const status = validateClassInputs()
   if (status.valid) {
     const classObj = constructClassFromManual()
-    saveNewClasses([classObj])
-    addClass(classObj)
-    exitEdit()
-    switchSection(welcomeSection)
+    const saveResult = await saveNewClasses([classObj])
+    if (saveResult.status) {
+      for (const classObj of saveResult.newClasses) {
+        addClass(classObj)
+        exitEdit()
+        switchSection(welcomeSection)
+      }
+    } else {
+      createError(saveResult.error)
+    }
   } else {
     createError(status.error)
   }
 }
 
-function saveClassEdit() {
-
+async function completeClassEdit() {
+  const status = validateClassInputs()
+  if (status.valid) {
+    const classObj = constructClassFromManual()
+    const saveResult = await saveEditedClass(classObj)
+    if (saveResult.status) {
+      const oldClassElement = classes[state.info.id].element
+      oldClassElement.children[1].innerText = `${saveResult.updatedClass.name} P${saveResult.updatedClass.period}`
+      oldClassElement.id = saveResult.updatedClass.id
+      delete classes[state.info.id]
+      classes[saveResult.updatedClass.id] = {element: oldClassElement, obj: saveResult.updatedClass}
+      exitEdit()
+      switchSection(welcomeSection)
+    } else {
+      createError(saveResult.error)
+    }
+  } else {
+    createError(status.error)
+  }
 }
 
-function createPlaceholderInput(text, inputClassName) {
+function createPlaceholderInput(text, inputClassName, value="") {
   const labelContainer = document.createElement("label")
   labelContainer.classList = "label"
   const input = document.createElement("input")
   input.classList.add("input")
   input.classList.add(inputClassName)
   input.required = true
+  input.value = value
   const span = document.createElement("span")
   span.innerText = text
   labelContainer.appendChild(input)
@@ -381,12 +447,21 @@ signOutBtn.addEventListener("click", signOut)
 addClassBtn.addEventListener("click", showAddClassModal)
 uploadClassInput.addEventListener("change", uploadClass)
 addStudentBtn.addEventListener("click", addStudentInputs)
-saveClassBtn.addEventListener("click", () => {
+saveClassBtn.addEventListener("click", async () => {
   if (state.mode == 2) {
-    saveClassAdd()
+    await completeClassAdd()
   } else if (state.mode == 3) {
-    saveClassEdit()
+    await completeClassEdit()
   }
 })
+
+editClassBtn.addEventListener("click", () => {
+  editClass(classes[state.info.id])
+})
+
+deleteClassBtn.addEventListener("click", () => {
+  deleteClass(state.info.id)
+})
+
 cancelClassBtn.addEventListener("click", exitEdit)
 // })()
