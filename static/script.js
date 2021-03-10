@@ -1,157 +1,372 @@
+// (() => {
+// Elements \\
 const loginContainer = document.getElementById("login-container")
 const app = document.getElementById("app")
 const loadingBar = document.getElementById("loading-bar")
 const signOutBtn = document.getElementById("signout")
 const username = document.getElementById("username")
-const addClass = document.getElementById("add-class-roster-input")
-let resetLoadTimeout
+const addClassBtn = document.getElementById("add-class")
+const classListDiv = document.getElementById("class-list")
+const uploadClassInput = document.getElementById("upload-class-input")
+const editClassSection = document.getElementById("edit-class-sec")
+const welcomeSection = document.getElementById("welcome-sec")
+const classInfoInputs = document.getElementById("class-info-inputs")
+const classNameInput = document.getElementById("class-name-input")
+const periodInput = document.getElementById("period-input")
+const statusTitle = document.getElementById("status-title")
+const studentInfoInputs = document.getElementById("student-info-inputs")
+const addStudentBtn = document.getElementById("add-student")
+const saveClassBtn = document.getElementById("save-class")
+const cancelClassBtn = document.getElementById("cancel-class")
+//-------\\
 
-let auth2
-let googleUser
+// Data (local) \\
+let classes = {}
+let state = {mode: 0, info: {}}
+/*
+0 = logged out
+1 = dashboard
+2 = adding class manually
+3 = editing class manually
+4 = class view
+*/
+//-------\\
 
 startLoad()
-gapi.load('auth2', () => {
-  auth2 = gapi.auth2.init({
-    client_id: '245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com'
-  })
 
-  auth2.then(() => {
-    if (!auth2.isSignedIn.get()) {
-      show(loginContainer)
-      endLoad()
-    }
-  })
-
-  gapi.signin2.render('login-btn', {
-    'scope': 'profile email',
-    'width': 240,
-    'height': 50,
-    'longtitle': true,
-    'theme': 'dark'
-  })
-
-  auth2.attachClickHandler('login-btn', {})
-
-  auth2.isSignedIn.listen(signinChanged)
-  auth2.currentUser.listen(userChanged)
-})
-
-function signinChanged(val) {
-  if (!val) {
-    auth2.signOut()
-    hide(app)
-    show(loginContainer)
-  }
+function setState(mode, info={}) {
+  state.mode = mode
+  state.info = info
 }
 
-async function signOut() {
-  loadAround(async () => {
-    await auth2.signOut()
-  })
-}
+function constructClassFromManual() {
+  const classObj = {}
 
-function uploadClass(e) {
-  if (addClass.files[0]) {
-    addClassToDatabase(addClass.files[0])
-  }
-}
-
-async function addClassToDatabase(file) {
-  let data = await file.text() //raw string data
-  let classObj = {}
-  //Derek Zhang assignment - 24 Feb 2021
-  //1. set the input to accept csv files only
-  //2. transform data into a JSON (classObj) from the file in the following format:
-  /*
-    {
-      name: "class name",
-      period: "period number (as a string)",
-      students: [
-        {
-          first: "first name",
-          middle: "middle initial"
-          last: "last name",
-          id: "student id"
+  classObj.name = classNameInput.value;
+  
+  classObj.id = md5(classNameInput.value + +periodInput.value)
+  classObj.period = periodInput.value
+  classObj.students = []
+  
+  for (const inputGroup of Array.from(studentInfoInputs.children)) {
+    if (!inputGroup.classList.contains("sizeholder")) {
+      const student = {}
+      for (let input of Array.from(inputGroup.children).slice(0,-1)) {
+        input = input.children[0]
+        if (input.classList.contains("first-name-input")) {
+          student.firstName = input.value
+        } else if (input.classList.contains("last-name-input")) {
+          student.lastName = input.value
+        } else if (input.classList.contains("middle-initial-input")) {
+          student.middleInitial = input.value ? input.value : null
+        } else if (input.classList.contains("student-id-input")) {
+          student.id = input.value
         }
-      ]
+      }
+      classObj.students.push(student)
     }
-  */
-  await fetch("/addClass", {
+  }
+  return classObj
+}
+
+
+async function constructClassesFromFile(file) {
+  let data = await file.text()
+  const classObjs = []
+  data = data.split("\n").map(r => r.split(","))
+  const required = ["Period","Course Name","ID","Student Last Name","Student First Name","Student Middle Name"]
+
+  for(const element of required) {
+    if (!data[0].includes(element)) {
+      createError("Invalid Format")
+      return {valid: false}
+    }
+  }
+
+  data = data.slice(1, data.length - 1)
+
+  for (const row of data) {
+    let existing
+    const hashedId = md5(row[3] + +row[1])
+    for(const classObj of classObjs) {
+      if (classObj.id == hashedId) {
+        existing = classObj
+      }      
+    }
+
+    if (existing) {
+      existing.students.push({
+        id: row[4],
+        first: row[6],
+        last: row[5],
+        middle: row[7][0],
+        preferences: []
+      })
+    } else {
+      classObjs.push({
+        id: hashedId,
+        name: row[3],
+        period: +row[1],
+        students: [
+          {
+            id: row[4],
+            first: row[6],
+            last: row[5],
+            middle: row[7] ? row[7][0] : "",
+            preferences: []
+          }
+        ],
+        groups: []
+      })
+    }   
+  }
+  
+  return {valid: true, classObjs: classObjs}
+}
+
+function saveNewClasses(classObjs) {
+  return fetch("/addClasses", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
     },
     body: JSON.stringify({
-      token: user.getAuthResponse().id_token,
+      classObjs: classObjs
+    })
+  }).then(res => res.json())
+}
+
+function saveEditedClass(classObj) {
+  return fetch("/editClasses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
       classObj: classObj
     })
   }).then(res => res.json())
 }
 
-async function userChanged(user) {
-  if (auth2.isSignedIn.get()) {
-    await loadAround(async () => {
-      const verified = await verify(user)
-      if (verified.status) {
-        if (verified.user.given_name) {
-          username.innerText = verified.user.given_name
+function addClassToUI(classObj) {
+  const classElement = document.createElement("div")
+  classElement.classList = "class"
+  const classArrow = document.createElement("button")
+  classArrow.classList = "class-arrow"
+  const className = document.createElement("p")
+  className.classList = "class-name"
+  classElement.setAttribute("class-id", classObj.id)
+  className.innerText = `${classObj.name} P${classObj.period}`
+  classElement.appendChild(classArrow)
+  classElement.appendChild(className)
+  setUpClassEvents(classElement)
+  const classElements = Array.from(classListDiv.children)
+  addList(classElement, classListDiv)
+  return classElement
+}
+
+function setUpClassEvents(classElement) {
+  classElement.addEventListener("click", () => {
+    removeList(classElement)
+  })
+}
+
+async function addClass(classObj) {
+  classes[classObj.id] = {obj: classObj, element: addClassToUI(classObj)}
+}
+
+async function uploadClass() {
+  loadAround(async () => {
+    if (uploadClassInput.files[0]) {
+      const classesResult = await constructClassesFromFile(uploadClassInput.files[0])
+      uploadClassInput.value = null
+      if (classesResult.valid) {
+        const saveResult = await saveNewClasses(classesResult.classObjs)
+        if (saveResult.status) {
+          for (const classObj of saveResult.newClasses) {
+            addClass(classObj)
+          }
+          modalExit()
+        } else {
+          createError(saveResult.error)
         }
-        hide(loginContainer)
-        show(app)
       }
+    }
+  })
+}
+
+function showAddClassModal() {
+  createModal("small", (modal, exit) => {
+    modal.classList.add("add-class-modal")
+    const upload = document.createElement("button")
+    upload.classList = "button"
+    upload.innerText = "Upload Class"
+    const uploadIcon = document.createElement("i")
+    uploadIcon.classList = "fa fa-file-upload fa-3x"
+    upload.appendChild(uploadIcon)
+    upload.addEventListener("click", () => {uploadClassInput.click()})
+    const manual = document.createElement("button")
+    manual.classList = "button"
+    manual.innerText = "Manually Add Class"
+    const manualIcon = document.createElement("i")
+    manualIcon.classList = "fa fa-pen-square fa-3x"
+    manual.addEventListener("click", () => {
+      exit()
+      editClass()
     })
+    manual.appendChild(manualIcon)
+    modal.appendChild(upload)
+    modal.appendChild(manual)
+  })
+}
+
+function editClass(classObj) {
+  if (classObj) {
+    statusTitle.innerText = "Edit Class"
+    setState(3, classObj.id)
+  } else {
+    statusTitle.innerText = "Create Class"
+    classNameInput.value = ""
+    periodInput.value = ""
+    classNameInput.classList.remove("invalid")
+    periodInput.classList.remove("invalid")
+    clearDiv(studentInfoInputs)
+    setState(2)
+  }
+  switchSection(editClassSection)
+}
+
+function addStudentInputs() {
+  const studentInfoContainer = document.createElement("div")
+  studentInfoContainer.classList = "student-info-container"
+  studentInfoContainer.appendChild(createPlaceholderInput("First Name", "first-name-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("Last Name", "last-name-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("Middle Initial", "middle-initial-input"))
+  studentInfoContainer.appendChild(createPlaceholderInput("ID", "student-id-input"))
+  const removeStudent = document.createElement("i")
+  removeStudent.classList = "fas fa-times-circle fa-2x remove-student"
+  removeStudent.addEventListener("click", () => {
+    removeList(studentInfoContainer)
+  })
+  studentInfoContainer.appendChild(removeStudent)
+  addList(studentInfoContainer, studentInfoInputs)
+}
+
+function validateClassInputs() {
+  let status = {valid: true}
+  for (const input of Array.from(classInfoInputs.children)) {
+    if (input.children[0].value == "") {
+      input.children[0].classList.add("invalid")
+      status = {valid: false, error: "Please fill out all fields"}
+    } else {
+      input.children[0].classList.remove("invalid")
+    }
+  }
+
+  if (!status.valid) return status
+
+  if (Array.from(studentInfoInputs.children).length == 1) {
+    return {valid: false, error: "Please add at least one student"}
+  }
+
+  for (const inputGroup of Array.from(studentInfoInputs.children)) {
+    if (!inputGroup.classList.contains("sizeholder")) {
+      for (let input of Array.from(inputGroup.children).slice(0,-1)) {
+        input = input.children[0]
+        if (!input.classList.contains("middle-initial-input") && input.value == "") {
+          input.classList.add("invalid")
+          status = {valid: false, error: "Please fill out all fields"}
+        } else {
+          input.classList.remove("invalid")
+        }
+      }
+    }
+  }
+
+  if (!status.valid) return status
+
+  if (Object.keys(classes).includes(md5(classNameInput.value + periodInput.value))) {
+    classNameInput.classList.add("invalid")
+    return {valid: false, error: "Duplicate Class"}
+  } else {
+    classNameInput.classList.remove("invalid")
+  }
+
+  const studentIds = []
+  for (const inputGroup of Array.from(studentInfoInputs.children)) {
+    for (let input of Array.from(inputGroup.children).slice(0,-1)) {
+      input = input.children[0]
+      if (input.classList.contains("student-id-input")) {
+        if (studentIds.includes(input.value)) {
+          input.classList.add("invalid")
+          status = {valid: false, error: "Duplicate Student IDs"}
+        } else {
+          studentIds.push(input.value)
+          input.classList.remove("invalid")
+        }
+      }
+    }
+  }
+  
+  return status
+}
+
+function exitEdit() {
+  switchSection(welcomeSection)
+  statusTitle.innerText = "Dashboard"
+  setState(1)
+}
+
+function saveClassAdd() {
+  const status = validateClassInputs()
+  if (status.valid) {
+    const classObj = constructClassFromManual()
+    saveNewClasses([classObj])
+    addClass(classObj)
+    exitEdit()
+    switchSection(welcomeSection)
+  } else {
+    createError(status.error)
   }
 }
 
-async function loadAround(func) {
-  console.log("loading")
-  startLoad()
-  await func()
-  endLoad()
+function saveClassEdit() {
+
 }
 
-async function startLoad() {
-  clearTimeout(resetLoadTimeout)
-  loadingBar.style.width = "30%"
-  loadingBar.style.opacity = 1
-  loadingBar.style.height = "4px"
+function createPlaceholderInput(text, inputClassName) {
+  const labelContainer = document.createElement("label")
+  labelContainer.classList = "label"
+  const input = document.createElement("input")
+  input.classList.add("input")
+  input.classList.add(inputClassName)
+  input.required = true
+  const span = document.createElement("span")
+  span.innerText = text
+  labelContainer.appendChild(input)
+  labelContainer.appendChild(span)
+  return labelContainer
 }
 
-async function endLoad() {
-  loadingBar.style.width = "100%"
-  setTimeout(() => {
-    loadingBar.style.height = 0
-    loadingBar.style.opacity = 0
-    resetLoadTimeout = setTimeout(() => {
-      loadingBar.style.width = 0
-      setTimeout(() => {
-        loadingBar.style.opacity = 1
-        loadingBar.style.height = "4px"
-      }, 500)
-    }, 500)
-  }, 750)
+function resetApp() {
+  username.innerText = ""
+  clearDiv(classListDiv)
+  classes = []
 }
 
-async function show(element) {
-  element.classList.add("visible")
-}
-
-async function hide(element) {
-  element.classList.remove("visible")
-}
-
-async function verify(user) {
-  const res = await fetch("/login", {
-    method: "POST",
-    body: JSON.stringify({
-      token: user.getAuthResponse().id_token
-    }),
-    headers: {
-        "Content-Type": "application/json"
-    }
-  }).then(res => res.json())
-  return res
-}
-
+// Event Listeners \\
 signOutBtn.addEventListener("click", signOut)
-addClass.addEventListener("change", uploadClass)
+addClassBtn.addEventListener("click", showAddClassModal)
+uploadClassInput.addEventListener("change", uploadClass)
+addStudentBtn.addEventListener("click", addStudentInputs)
+saveClassBtn.addEventListener("click", () => {
+  if (state.mode == 2) {
+    saveClassAdd()
+  } else if (state.mode == 3) {
+    saveClassEdit()
+  }
+})
+cancelClassBtn.addEventListener("click", exitEdit)
+// })()
