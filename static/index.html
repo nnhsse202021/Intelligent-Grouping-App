@@ -57,20 +57,40 @@
         <div id="groups-panel" class = "panel">
 
           <div id="create-group-container">
-            <button id="create-group" class="button">Create Group</button>
+            <button id="create-group" class="button">Create Grouping</button>
           </div>
 
-          <div id="groups-container">
+          <div id="groupings-list">
             
           </div>
           
         </div>
+        
         <div id="preferences-panel" class = "panel">
           <h1 id="preferences-title" class="medium">Preferences (WIP)</h1>
         </div>
         
         
       </div>
+
+      <div id="edit-group-sec" class="section">
+        <div id="group-scatter">
+          <div id="add-group" class="group-container persist"><i class="fa fa-plus fa-10x"></i></div>
+        </div>
+
+        <div id="group-sidebar">
+          <div id="group-actions-div">
+            <label>
+              <input id="group-name-input" class="input" required>
+              <span>Group Name</span>
+            </label>
+            <button id="arrange-students" class="button">Arrange Students</button>
+            <button id="save-group" class="button">Save</button>
+          </div>
+          <div id="ungrouped-students-list"></div>
+        </div>
+      </div>
+
       <div id="edit-class-sec" class="section">
         <h1 id="class-info-title" class="large">Class Info</h1>
         <div id="class-info-inputs">
@@ -85,7 +105,7 @@
         </div>
         <h1 id="student-info-title" class="large">Student Info</h1>
         <div id="student-info-inputs">
-          <div class="student-info-container sizeholder"><label class="label"><input class="input first-name-input"></label><label class="label"><input class="input last-name-input"></label><label class="label"><input class="input middle-initial-input"></label><label class="label"><input class="input student-id-input"></label><i class="fas fa-times-circle fa-2x remove-student"></i></div>
+          <div class="student-info-container sizeholder persist"><label class="label"><input class="input first-name-input"></label><label class="label"><input class="input last-name-input"></label><label class="label"><input class="input middle-initial-input"></label><label class="label"><input class="input student-id-input"></label><i class="fas fa-times-circle fa-2x remove-student"></i></div>
         </div>
         <button id="add-student" class="button">+ Add Student</button>
         <div id="edit-actions">

@@ -48,9 +48,10 @@ async function userChanged(user) {
     await loadAround(async () => {
       const verification = await verify(user)
       if (verification.status) {
-        if (verification.user.given_name) {
-          console.log(verification.user)
-          username.innerText = verification.user.given_name[0] + verification.user.family_name[0]
+        if (verification.user.given_name || verification.user.family_name) {
+          username.innerText = (verification.user.given_name[0] || "") + (verification.user.family_name[0] || "")
+        } else {
+          username.innerText = "👤"
         }
         for (const classObj of verification.classes) {
           addClass(classObj)

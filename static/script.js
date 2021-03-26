@@ -24,6 +24,15 @@ const infoPanelNumStudents = document.getElementById("info-panel-num-students")
 const infoPanelNumGroups = document.getElementById("info-panel-num-groups")
 const editClassBtn = document.getElementById("edit-class")
 const deleteClassBtn = document.getElementById("delete-class")
+const createGroupBtn = document.getElementById("create-group")
+const editGroupSection = document.getElementById("edit-group-sec")
+const arrangeStudentsBtn = document.getElementById("arrange-students")
+const ungroupedStudentsListDiv = document.getElementById("ungrouped-students-list")
+const groupScatter = document.getElementById("group-scatter")
+const saveGroupBtn = document.getElementById("save-group")
+const addGroupBtn = document.getElementById("add-group")
+const groupNameInput = document.getElementById("group-name-input")
+const groupingsList = document.getElementById("groupings-list")
 //-------\\
 
 // Data (local) \\
@@ -35,6 +44,8 @@ let state = {mode: 0, info: {}}
 2 = adding class manually
 3 = editing class manually
 4 = class view
+5 = create group
+6 = edit group
 */
 //-------\\
 
@@ -46,7 +57,7 @@ function setState(mode, info={}) {
 }
 
 function constructClassFromManual() {
-  const classObj = {groups: []}
+  const classObj = {groupings: []}
 
   classObj.name = classNameInput.value;
   
@@ -92,7 +103,7 @@ async function constructClassesFromFile(file) {
 
   for (const row of data) {
     let existing
-    const hashedId = md5(row[3] + +row[1])
+    const hashedId = md5(row[3] + row[1])
     for(const classObj of classObjs) {
       if (classObj.id == hashedId) {
         existing = classObj
@@ -121,7 +132,7 @@ async function constructClassesFromFile(file) {
             preferences: []
           }
         ],
-        groups: []
+        groupings: []
       })
     }   
   }
@@ -164,12 +175,11 @@ function addClassToUI(classObj) {
   const className = document.createElement("p")
   className.classList = "class-name"
   classElement.setAttribute("id", classObj.id)
-  className.innerText = `${classObj.name} P${classObj.period}`
+  className.innerText = `${classObj.name} ${+classObj.period == classObj.period ? "P" + +classObj.period : classObj.period}`
   classElement.appendChild(classArrow)
   classElement.appendChild(className)
   setUpClassEvents(classElement)
-  const classElements = Array.from(classListDiv.children)
-  addList(classElement, classListDiv)
+  classListDiv.appendChild(classElement)
   return classElement
 }
 
@@ -190,11 +200,44 @@ function showClass(id) {
   switchSection(viewClassSection)
   let selectedClass = classes[id].obj
   statusTitle.innerText = "View Class"
-  setState(4, {id: selectedClass.id})
-  infoPanelClassName.innerText = `${selectedClass.name}  P${selectedClass.period}`
+  setState(4, {id: id})
+  infoPanelClassName.innerText = `${selectedClass.name} ${+selectedClass.period == selectedClass.period ? "P" + +selectedClass.period : selectedClass.period}`
   infoPanelNumStudents.innerText = `${selectedClass.students.length} Students`
-  infoPanelNumGroups.innerText = `${selectedClass.groups.length} Groups`
+  infoPanelNumGroups.innerText = `${selectedClass.groupings.length} Groups`
+  clearDiv(groupingsList)
+  for (const grouping of selectedClass.groupings) {
+    addGroupingToList(grouping)
+  }
 }
+
+function addGroupingToList(grouping) {
+  const groupingContainer = document.createElement("div")
+  groupingContainer.classList.add("grouping-container")
+  groupingContainer.id = grouping.id
+  const groupingName = document.createElement("p")
+  groupingName.innerText = `${grouping.name} (${grouping.groups.length})`
+  const deleteGroup = document.createElement("i")
+  deleteGroup.classList = "fa fa-times fa-2x"
+
+  groupingContainer.addEventListener("click", () => {
+    editGrouping(grouping)
+  })
+
+  deleteGroup.addEventListener("click", async (e) => {
+    e.stopPropagation()
+    const deleteResult = await deleteGroupFromDB(state.info.id, grouping.id)
+    console.log(deleteResult)
+    if (deleteResult.status) {
+      groupingsList.removeChild(groupingContainer)
+    } else {
+      createError(deleteResult.error)
+    }
+  })
+
+  groupingContainer.appendChild(groupingName)
+  groupingContainer.appendChild(deleteGroup)
+  groupingsList.appendChild(groupingContainer)
+} 
 
 async function addClass(classObj) {
   classes[classObj.id] = {obj: classObj}
@@ -216,6 +259,8 @@ async function uploadClass() {
         } else {
           createError(saveResult.error)
         }
+      } else {
+        createError("Invalid File")
       }
     }
   })
@@ -246,6 +291,221 @@ function showAddClassModal() {
   })
 }
 
+function getRandomGroups(type, num, classId) {
+  return fetch("/randomGroups", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
+      id: classId,
+      type: type,
+      num: num
+    })
+  }).then(res => res.json())
+}
+
+function showArrangeStudentsModal() {
+  createModal("tall", (modal, exit) => {
+    modal.classList.add("arrange-options-modal")
+    const title = document.createElement("h1")
+    title.classList = "medium"
+    title.innerText = "Choose an Arrangement"
+    const optionsDiv = document.createElement("div")
+    const random = document.createElement("button")
+    random.classList = "button"
+    random.innerText = "Random"
+    random.addEventListener("click", () => {
+      exit()
+      createModal("tall", (m, e) => {
+        m.classList.add("random-options-modal")
+        const groupNumForm = document.createElement("form")
+        groupNumForm.innerHTML += "<p>Create</p>"
+        const groupNum = document.createElement("input")
+        groupNum.required = true
+        groupNum.id = "group-num-input"
+        groupNumForm.appendChild(groupNum)
+        groupNumForm.innerHTML += "<p>groups</p>"
+
+        const or = document.createElement("h1")
+        or.classList = "medium"
+        or.innerText = "OR"
+
+        const studentNumForm = document.createElement("form")
+        studentNumForm.innerHTML += "<p>Create groups of</p>"
+        const studentNum = document.createElement("input")
+        studentNum.required = true
+        studentNum.id = "student-num-input"
+        studentNumForm.appendChild(studentNum)
+        studentNumForm.innerHTML += "<p>students</p>"
+
+        const submit = document.createElement("button")
+        submit.classList = "button"
+        submit.innerText = "Submit"
+        const singleInput = (e) => {
+          let gNum = document.getElementById("group-num-input")
+          let sNum = document.getElementById("student-num-input")
+          if ((e.target == gNum && gNum.value) || sNum.value != +sNum.value || sNum.value < 1) {
+            sNum.value = ""
+          }
+          if ((e.target == sNum && sNum.value) || gNum.value != +gNum.value || gNum.value < 1) {
+            gNum.value = ""
+          }
+        }
+        submit.addEventListener("click", async () => {
+          let gNum = document.getElementById("group-num-input")
+          let sNum = document.getElementById("student-num-input")
+          const groupsResult = await getRandomGroups(gNum.value ? 0 : 1, gNum.value ? +gNum.value : +sNum.value, state.info.id)
+          setGroups(groupsResult.groups)
+          document.removeEventListener("input", singleInput)
+          e()
+        })
+
+        m.appendChild(groupNumForm)
+        m.appendChild(or)
+        m.appendChild(studentNumForm)
+        m.appendChild(submit)
+        
+        document.addEventListener("input", singleInput)
+      })
+    })
+    modal.appendChild(title)
+    optionsDiv.appendChild(random)
+    modal.appendChild(optionsDiv)
+  })
+}
+
+function addGroup() {
+  const groupContainer = document.createElement("div")
+  groupContainer.classList.add("group-container")
+  const groupName = document.createElement("h1")
+  groupName.classList = "medium"
+  groupName.innerText = `Group ${Array.from(groupScatter.children).length}`
+  const closeGroup = document.createElement("i")
+  closeGroup.classList = "fa fa-times close-group"
+  const studentList = document.createElement("div")
+  studentList.classList = "group-student-list"
+  closeGroup.addEventListener("click", () => {
+    for (const student of Array.from(studentList.children)) {
+      addList(student, ungroupedStudentsListDiv)
+    }
+    groupScatter.removeChild(groupContainer)
+    normalizeGroupTitles()
+  })
+  groupContainer.appendChild(groupName)
+  groupContainer.appendChild(closeGroup)
+  groupContainer.appendChild(studentList)
+  groupScatter.insertBefore(groupContainer, addGroupBtn)
+  return groupContainer
+}
+
+function setGroups(groups) {
+  for (const group of Array.from(groupScatter.children)) {
+    if (group.id != "add-group") {
+      for (const student of Array.from(group.children[2].children)) {
+        ungroupedStudentsListDiv.appendChild(student)
+      }
+    }
+  }
+  clearDiv(groupScatter)
+  for (let i = 0; i < groups.length; i++) {
+    const groupContainer = addGroup()
+    for (const student of groups[i]) {
+      groupContainer.children[2].appendChild(Array.from(ungroupedStudentsListDiv.children).find(e => e.id == student))
+    }
+  }
+}
+
+function normalizeGroupTitles() {
+  const groups = Array.from(groupScatter.children)
+  for (let i = 0; i < groups.length-1; i++) {
+    if (groups[i].id != "add-group") {
+      groups[i].children[0].innerText = `Group ${i+1}`
+    }
+  }
+}
+
+function constructGroupingFromUI() {
+  return {
+    id: md5(groupNameInput.value),
+    name: groupNameInput.value,
+    groups: Array.from(groupScatter.children).filter(e => e.id != "add-group").map(e => Array.from(e.children[2].children).map(s => s.id))
+  }
+}
+
+function validateGroups() {
+  if (groupNameInput.value) {
+    groupNameInput.classList.remove("invalid")
+  } else {
+    groupNameInput.classList.add("invalid")
+    return {valid: false, error: "Please fill out all fields"}
+  }
+
+  if (Object.values(classes).map(c => c.obj.groupings).flat().includes(groupNameInput.value)) {
+    return {valid: false, error: "Duplicate Grouping Name"}
+  }
+
+  if (Array.from(groupScatter.children).length == 1) {
+    return {valid: false, error: "Please add at least one group"}
+  }
+
+  return {valid: true}
+}
+
+function openAcceptStudent(student) {
+  student.classList.add("selected")
+  state.info.student = student
+  for (const group of Array.from(groupScatter.children)) {
+    if (group.id != "add-group" && student.parentNode != group.children[2]) {
+      group.children[2].classList.add("accepting")
+      group.children[2].addEventListener("click", acceptStudent)
+    }
+  }
+  if (student.parentNode != ungroupedStudentsListDiv) {
+    ungroupedStudentsListDiv.classList.add("accepting")
+    ungroupedStudentsListDiv.addEventListener("click", acceptStudent)
+  }
+  document.addEventListener("click", closeOutsideClick)
+} 
+
+function closeOutsideClick(e) {
+  let close = true
+  for (const group of Array.from(groupScatter.children)) {
+    if (group.id != "add-group" && group.children[2].contains(e.target)) {
+      close = false
+    }
+  }
+  if (ungroupedStudentsListDiv.contains(e.target)) {
+    close = false
+  }
+
+  if (close) {
+    closeAcceptStudent()
+  }
+}
+
+function closeAcceptStudent(e) {
+  for (const group of Array.from(groupScatter.children)) {
+    if (group.id != "add-group") {
+      group.children[2].classList.remove("accepting")
+      group.children[2].removeEventListener("click", acceptStudent)
+    }
+  }
+  ungroupedStudentsListDiv.classList.remove("accepting")
+  ungroupedStudentsListDiv.removeEventListener("click", acceptStudent)
+  setTimeout(() => {
+    state.info.student.classList.remove("selected")
+    state.info.student = null
+  }, 500)
+  document.removeEventListener("click", closeOutsideClick)
+}
+
+function acceptStudent(e) {
+  addList(state.info.student, e.currentTarget)
+  closeAcceptStudent()
+}
+
 function editClass(classObj) {
   if (classObj) {
     statusTitle.innerText = "Edit Class"
@@ -269,6 +529,50 @@ function editClass(classObj) {
     setState(2)
   }
   switchSection(editClassSection)
+}
+
+function editGrouping(grouping) {
+  if (grouping) {
+    statusTitle.innerText = "Edit Group"
+    clearDiv(ungroupedStudentsListDiv)
+    clearDiv(groupScatter)
+    console.log(state.info.id)
+    for (const student of classes[state.info.id].obj.students) {
+      const studentContainer = document.createElement("div")
+      studentContainer.classList = "student-name-container"
+      studentContainer.innerText = `${student.first} ${student.middle ? `${student.middle}. ` : ""}${student.last}`
+      studentContainer.id = student.id
+      studentContainer.addEventListener("click", () => {
+        if (!state.info.student) {
+          openAcceptStudent(studentContainer)
+        }
+      })
+      ungroupedStudentsListDiv.appendChild(studentContainer)
+    }
+    setGroups(grouping.groups)
+    groupNameInput.value = grouping.name
+    switchSection(editGroupSection)
+    setState(6, {id: state.info.id, groupingId: grouping.id})
+  } else {
+    statusTitle.innerText = "Create Group"
+    clearDiv(ungroupedStudentsListDiv)
+    clearDiv(groupScatter)
+    for (const student of classes[state.info.id].obj.students) {
+      const studentContainer = document.createElement("div")
+      studentContainer.classList = "student-name-container"
+      studentContainer.innerText = `${student.first} ${student.middle ? `${student.middle}. ` : ""}${student.last}`
+      studentContainer.id = student.id
+      studentContainer.addEventListener("click", () => {
+        if (!state.info.student) {
+          openAcceptStudent(studentContainer)
+        }
+      })
+      ungroupedStudentsListDiv.appendChild(studentContainer)
+    }
+    groupNameInput.classList.remove("invalid")
+    switchSection(editGroupSection)
+    setState(5, {id: state.info.id})
+  }
 }
 
 function addStudentInputs(student) {
@@ -322,9 +626,11 @@ function validateClassInputs() {
 
   if (state.mode == 2 && Object.keys(classes).includes(md5(classNameInput.value + periodInput.value))) {
     classNameInput.classList.add("invalid")
+    periodInput.classList.add("invalid")
     return {valid: false, error: "Duplicate Class"}
   } else {
     classNameInput.classList.remove("invalid")
+    periodInput.classList.remove("invalid")
   }
 
   const studentIds = []
@@ -371,7 +677,7 @@ async function deleteClass(id) {
   }
 }
 
-function exitEdit() {
+function exitEditClass() {
   if (state.mode == 3) {
     showClass(state.info.id)
   } else {
@@ -389,8 +695,7 @@ async function completeClassAdd() {
     if (saveResult.status) {
       for (const classObj of saveResult.newClasses) {
         addClass(classObj)
-        exitEdit()
-        switchSection(welcomeSection)
+        exitEditClass()
       }
     } else {
       createError(saveResult.error)
@@ -411,13 +716,89 @@ async function completeClassEdit() {
       oldClassElement.id = saveResult.updatedClass.id
       delete classes[state.info.id]
       classes[saveResult.updatedClass.id] = {element: oldClassElement, obj: saveResult.updatedClass}
-      exitEdit()
+      exitEditClass()
       switchSection(welcomeSection)
     } else {
       createError(saveResult.error)
     }
   } else {
     createError(status.error)
+  }
+}
+
+function deleteGroupFromDB(id, groupingId) {
+  return fetch("/deleteGroup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
+      id: id,
+      groupingId: groupingId
+    })
+  }).then(res => res.json())
+}
+
+function saveNewGrouping(grouping, id) {
+  return fetch("/addGrouping", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
+      id: id,
+      grouping: grouping
+    })
+  }).then(res => res.json())
+}
+
+async function completeGroupAdd() {
+  const validateResult = validateGroups()
+  if (validateResult.valid) {
+    const grouping = constructGroupingFromUI()
+    const saveResult = await saveNewGrouping(grouping, state.info.id)
+    if (saveResult.status) {
+      classes[state.info.id].obj.groupings.push(grouping)
+      showClass(state.info.id)
+      setState(4, {id: state.info.id})
+    }
+  } else {
+    createError(validateResult.error)
+  }
+}
+
+
+function saveEditedGrouping(grouping, oldId, id) {
+  return fetch("/editGrouping", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      token: auth2.currentUser.get().getAuthResponse().id_token
+    },
+    body: JSON.stringify({
+      id: id,
+      oldId: id,
+      grouping: grouping
+    })
+  }).then(res => res.json())
+}
+
+async function completeGroupEdit() {
+  const validateResult = validateGroups()
+  if (validateResult.valid) {
+    const grouping = constructGroupingFromUI()
+    const saveResult = await saveEditedGrouping(grouping, state.info.groupingId, state.info.id)
+    if (saveResult.status) {
+      addGroupingToList(grouping)
+      classes[state.info.id].obj.groupings = classes[state.info.id].obj.groupings.filter(grouping => grouping.id != state.info.groupingId)
+      classes[state.info.id].obj.groupings.push(grouping)
+      showClass(state.info.id)
+      setState(4, {id: state.info.id})
+    }
+  } else {
+    createError(validateResult.error)
   }
 }
 
@@ -463,5 +844,19 @@ deleteClassBtn.addEventListener("click", () => {
   deleteClass(state.info.id)
 })
 
-cancelClassBtn.addEventListener("click", exitEdit)
+createGroupBtn.addEventListener("click", () => {editGrouping()})
+
+saveGroupBtn.addEventListener("click", async () => {
+  if (state.mode == 5) {
+    await completeGroupAdd()
+  } else if (state.mode == 6) {
+    await completeGroupEdit()
+  }
+})
+
+arrangeStudentsBtn.addEventListener("click", showArrangeStudentsModal)
+
+addGroupBtn.addEventListener("click", addGroup)
+
+cancelClassBtn.addEventListener("click", exitEditClass)
 // })()
