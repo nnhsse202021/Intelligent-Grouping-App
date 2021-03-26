@@ -1,19 +1,18 @@
 // Imports \\
-const app = require('express')();
+const app = require('express')()
 const http = require('http').createServer(app)
 const bodyParser = require('body-parser')
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 const dotenv = require('dotenv').config()
-const {OAuth2Client} = require('google-auth-library');
-const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID);
-const crypto = require("crypto")
+const {OAuth2Client} = require('google-auth-library')
+const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID)
 
 // Constants \\
 const DBName = "data"
 
 // Database \\
-mongoose.connect(`mongodb+srv://GroupingApp:${process.env.DBPASS}@groupingapp.iz1de.mongodb.net/${DBName}?retryWrites=true&w=majority`, {useNewUrlParser: true, useUnifiedTopology: true});
-const db = mongoose.connection;
+mongoose.connect(`mongodb+srv://GroupingApp:${process.env.DBPASS}@groupingapp.iz1de.mongodb.net/${DBName}?retryWrites=true&w=majority`, {useNewUrlParser: true, useUnifiedTopology: true})
+const db = mongoose.connection
 
 db.on('error', console.error.bind(console, 'Connection Error:'))
 db.once('open', function() {
@@ -27,7 +26,7 @@ const userSchema = new mongoose.Schema({
     {
       id: String,
       name: String,
-      period: Number,
+      period: String,
       students: [
         {
           id: String,
@@ -43,10 +42,11 @@ const userSchema = new mongoose.Schema({
           ]
         }
       ],
-      groups: [
+      groupings: [
         {
-          type: Number,
-          groupings: [String]
+          id: String,
+          name: String,
+          groups: [[String]]
         }
       ]
     }
@@ -130,6 +130,61 @@ app.post("/deleteClass", async (req, res) => {
   }
 })
 
+app.post("/randomGroups", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub}).exec()
+    if (req.body.type == 0) {
+      res.json({status: true, groups: makeGroupsByNumGroups(user.classes.find(c => c.id == req.body.id).students.map(s => s.id), req.body.num)})
+    } else {
+      res.json({status: true, groups: makeGroupsByNumStudents(user.classes.find(c => c.id == req.body.id).students.map(s => s.id), req.body.num)})
+    }
+  }
+})
+
+app.post("/addGrouping", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub}).exec()
+    user.classes.find(c => c.id == req.body.id).groupings.push(req.body.grouping)
+    user.save()
+    res.json({status: true})
+  }
+})
+
+app.post("/editGrouping", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub}).exec()
+    const groupings = user.classes.find(c => c.id == req.body.id).groupings
+
+    groupings.splice(groupings.indexOf(groupings.find(g => g.id == req.body.oldId)), 1)
+
+    user.classes.find(c => c.id == req.body.id).groupings.push(req.body.grouping)
+    user.save()
+    res.json({status: true})
+  }
+})
+
+app.post("/deleteGroup", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.id}}}).exec()
+    if (user) {
+      const groupings = user.classes.find(c => c.id == req.body.id).groupings
+      if (groupings) {
+        groupings.splice(groupings.indexOf(groupings.find(g => g.id == req.body.groupingId)), 1)
+      await user.save()
+      res.json({status: true})
+      } else {
+        res.json({status: false, error: "No Group Found"})
+      }
+    } else {
+      res.json({status: false, error: "No Class Found"})
+    }
+  }
+})
+
 app.use((req, res) => {
   res.sendFile(__dirname + req.url)
 })
@@ -142,8 +197,8 @@ http.listen(process.env.PORT, function(){
 
 async function verifyUser(token) {
   const ticket = await oAuth2Client.verifyIdToken({
-      idToken: token,
-      audience: process.env.CLIENT_ID
+    idToken: token,
+    audience: process.env.CLIENT_ID
   }).catch(e => {
     return {status: false}
   })
@@ -189,8 +244,8 @@ function makeGroupsByNumStudents(students, numStudents) {
     counter = (counter+1) % groups.length
   }
   
-  const avg = groups.reduce((a, b) => a + b.length, 0) / groups.length
-  console.log(avg)
+  // const avg = groups.reduce((a, b) => a + b.length, 0) / groups.length
+  // console.log(avg)
 
   // if (avg > numStudents + 0.5 || avg < numStudents - 0.5) {
   //   console.log("weird")

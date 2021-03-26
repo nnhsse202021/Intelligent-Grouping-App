@@ -5,9 +5,8 @@ function createModal(size, construct, cancel = () => {}) {
   blind.classList = "modal-blind"
   const modal = document.createElement("div")
   modal.classList = `modal ${size}`
-  const close = document.createElement("div")
-  close.classList = "modal-close"
-  close.innerText = "🗙"
+  const close = document.createElement("i")
+  close.classList = "fa fa-times modal-close"
   modalExit = () => {
     hideFade(blind)
     hideFade(modal)
@@ -31,9 +30,10 @@ function createModal(size, construct, cancel = () => {}) {
 }
 
 function clearDiv(div) {
-  for (const child of Array.from(div.children))
-  if (!child.classList || !child.classList.contains("sizeholder")) {
-    div.removeChild(child)
+  for (const child of Array.from(div.children)) {
+    if (!child.classList || !child.classList.contains("persist")) {
+      div.removeChild(child)
+    }
   }
 }
 

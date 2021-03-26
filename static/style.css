@@ -10,7 +10,7 @@
   --placeholder: #a3a3a3
 }
 
-* {
+*{
   font-family: 'Montserrat', sans-serif;
   box-sizing: border-box;
 }
@@ -29,7 +29,6 @@ body {
   color: var(--dark);
   font-size: 3em;
   text-align: center;
-
 }
 
 #loading-bar-container {
@@ -72,7 +71,7 @@ body {
 }
 
 #create-group {
-  width: 60%;
+  width: 40%;
 }
 
 #create-group-container {
@@ -294,7 +293,7 @@ body {
   text-align: center;
   transition: 0.6s cubic-bezier(.76,-0.47,.24,1.47);
   z-index: 100;
-  transform: translate(calc(-50% + 125px), -100%);
+  transform: translate(calc(-50% + 175px), -100%);
   box-shadow: 0 0 10px var(--dark);
 }
 
@@ -594,6 +593,9 @@ h1 {
 .panel {
   border: 1px solid var(--lighter-gray);
   padding: 20px;
+  background-color: var(--light-bg-alt);
+  border-radius: 20px;
+  margin: 20px;
 }
 
 #information-panel > p {
@@ -609,4 +611,251 @@ h1 {
 #info-panel-class {
   margin: 0;
   text-align: center;
+}
+
+#edit-group-sec {
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto 300px;
+}
+
+#group-scatter {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  grid-area: 1 / 1 / 2 / 2;
+  padding: 20px;
+  flex-wrap: wrap;
+  height: calc(100vh - 75px);
+  overflow-y: auto;
+}
+
+#group-actions-div {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  border: 2px solid var(--light-gray);
+  border-radius: 0 0 0 16px;
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+#arrange-students, #save-group {
+  width: 90%;
+}
+
+#ungrouped-students-list {
+  border-left: 1px solid var(--light-gray);
+  grid-area: 2 / 1 / 3 / 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 20px;
+  overflow-y: auto;
+  border-top-left-radius: 8px;
+  height: calc(100vh - 250px);
+  transition: 0.3s all;
+}
+
+#group-sidebar {
+  display: grid;
+  grid-template-rows: 175px auto;
+  grid-area: 1 / 2 / 2 / 3;
+}
+
+.modal.tall {
+  width: 350px;
+  height: 500px;
+}
+
+.arrange-options-modal {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.arrange-options-modal > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.arrange-options-modal > h1 {
+  margin: 0;
+  text-align: center;
+}
+
+.arrange-options-modal > div > button {
+  width: 100%;
+}
+
+.random-options-modal {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.random-options-modal > form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: 0.3s all;
+  opacity: 0.4
+}
+
+.random-options-modal > form > p {
+  font-size: 1.4em;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.random-options-modal > form > input {
+  text-align: center;
+  width: 100px;
+  border: none;
+  font-size: 1.3em;
+  border-bottom: 2px solid var(--dark);
+  border-radius: 8px;
+  outline: none;
+  transition: 0.3s all
+}
+
+.random-options-modal > form > input:focus {
+  border-color: var(--accent);
+}
+
+.random-options-modal > h1 {
+  margin: 0
+}
+
+.random-options-modal > button {
+  width: 80%;
+}
+
+.random-options-modal > form:valid, .random-options-modal > form:hover, .random-options-modal > form:focus {
+  opacity: 1;
+}
+
+.student-name-container {
+  font-size: 1.3em;
+  background-color: var(--light-bg-alt);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 6px 10px 6px 18px;
+  width: 100%;
+  transition: 0.3s all;
+  cursor: pointer;
+}
+
+.group-container {
+  width: 400px;
+  background-color: var(--light-bg-alt);
+  border-radius: 16px;
+  padding: 40px;
+  margin: 20px;
+  position: relative;
+}
+
+.group-container > h1 {
+  margin: 0 0 30px 0;
+}
+
+.group-student-list > .student-name-container {
+    background-color: var(--light-bg);
+}
+
+#add-group {
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+#add-group > i {
+  color: var(--light-gray);
+}
+
+.close-group {
+  font-size: 1.7em;
+  color: var(--dark);
+  cursor: pointer;
+  position: absolute;
+  transform: translate(50%, -50%);
+  top: 35px;
+  right: 35px;
+}
+
+.student-name-container.selected {
+  color: white;
+  background-color: var(--accent) !important;
+}
+
+.group-student-list.accepting {
+  border-color: var(--accent);
+  cursor: pointer;
+}
+
+.group-student-list {
+  border: 5px solid transparent;
+  border-radius: 8px;
+  padding: 10px 10px 0 10px;
+  transition: 0.3s all;
+}
+
+#ungrouped-students-list.accepting {
+  cursor: pointer;
+  border-color: var(--accent);
+  border-width: 5px;
+}
+
+.group-student-list:empty {
+  height: 75px;
+}
+
+#group-name-input {
+  font-size: 1.3em;
+  background-color: var(--light-bg);
+}
+
+#group-actions-div span {
+  top: 10px;
+  font-size: 1.4em;
+  background-color: var(--light-bg);
+}
+
+.grouping-container {
+  display: flex;
+  width: 75%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--light-bg-alt);
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+}
+
+.grouping-container > p {
+  color: var(--dark);
+  font-size: 1.4em;
+  margin: 0;
+}
+
+#groupings-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  overflow-y: scroll;
 }
