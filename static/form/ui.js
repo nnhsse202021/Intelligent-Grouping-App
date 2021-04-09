@@ -86,7 +86,6 @@ function addList(element, target) {
   setTimeout(() => {
     element.style.height = "auto"
   }, 300)
- 
 }
 
 function createError(errorText) {
@@ -130,12 +129,6 @@ async function endLoad() {
       }, 500)
     }, 500)
   }, 750)
-}
-
-function deselectAllClasses() {
-  for (const element of Array.from(classListDiv.children)) {
-    element.classList.remove("selected")
-  }
 }
 
 function createPlaceholderInput(text, inputClassName, value="") {

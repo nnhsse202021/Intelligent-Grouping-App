@@ -10,7 +10,7 @@
   --placeholder: #a3a3a3
 }
 
-*{
+* {
   font-family: 'Montserrat', sans-serif;
   box-sizing: border-box;
 }
@@ -49,11 +49,13 @@ body {
 
 #view-class-sec {
   padding: 0;
-  width: 100%;
+  width: calc(100% - 60px);
+  height: calc(100% - 60px);
   display: grid;
-  grid-template-columns: 50% 50%;
-  grid-template-rows: 50% 50%;
-
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: calc(50% - 15px) calc(50% - 15px);
+  margin: 30px;
+  grid-gap: 30px;
 }
 
 #information-panel {
@@ -67,11 +69,13 @@ body {
 #groups-panel {
   grid-area: 2/1/3/2;
   display: grid;
-  grid-template-rows: 75px auto;
+  grid-template-rows: 100px auto;
 }
 
 #create-group {
-  width: 40%;
+  padding: 10px 40px;
+  background-color: var(--accent);
+  color: var(--light-bg-alt);
 }
 
 #create-group-container {
@@ -84,6 +88,23 @@ body {
 
 #preferences-panel {
   grid-area: 1/2/3/3;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 5em 1fr 3em 3em;
+  grid-gap: 12px;
+  align-content: center;
+}
+
+#preferences-title {
+  text-align: center;
+}
+
+#preferences-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  overflow-y: auto;
 }
 
 #app {
@@ -295,6 +316,7 @@ body {
   z-index: 100;
   transform: translate(calc(-50% + 175px), -100%);
   box-shadow: 0 0 10px var(--dark);
+  max-width: 100%;
 }
 
 .abcRioButtonIcon {
@@ -398,6 +420,10 @@ body {
   transform: translate(50%, -50%);
   top: 25px;
   right: 25px;
+}
+
+.fa-times {
+  padding: 0 10px;
 }
 
 .modal.large {
@@ -573,7 +599,7 @@ h1 {
 }
 
 .invalid {
-  border-color: var(--error);
+  border-color: var(--error) !important;
 }
 
 #edit-actions {
@@ -592,10 +618,9 @@ h1 {
 
 .panel {
   border: 1px solid var(--lighter-gray);
-  padding: 20px;
+  padding: 40px;
   background-color: var(--light-bg-alt);
   border-radius: 20px;
-  margin: 20px;
 }
 
 #information-panel > p {
@@ -604,8 +629,21 @@ h1 {
   text-align: center;
 }
 
-#edit-class, #delete-class {
-  width: 60%;
+#class-actions > button {
+  width: auto;
+  color: var(--light-bg-alt);
+  padding: 12px 16px;
+  background-color: var(--accent);
+  margin: 0 12px;
+  font-size: 2em;
+}
+
+#class-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
 }
 
 #info-panel-class {
@@ -668,7 +706,7 @@ h1 {
 
 .modal.tall {
   width: 350px;
-  height: 500px;
+  height: 600px;
 }
 
 .arrange-options-modal {
@@ -842,8 +880,30 @@ h1 {
   align-items: center;
   background-color: var(--light-bg-alt);
   border-radius: 8px;
-  padding: 20px;
+  padding: 16px;
   cursor: pointer;
+  border: 2px solid var(--accent);
+  margin-bottom: 16px;
+}
+
+.preference-container {
+  display: flex;
+  width: 75%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--light-bg-alt);
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  border: 2px solid var(--accent);
+  margin-bottom: 16px;
+}
+
+.preference-container > p {
+  color: var(--dark);
+  font-size: 1.4em;
+  margin: 0;
 }
 
 .grouping-container > p {
@@ -857,5 +917,66 @@ h1 {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  overflow-y: scroll;
+  overflow-y: auto;
+}
+
+#add-preference {
+  padding: 0 40px;
+  justify-self: center;
+}
+
+#copy-form-link {
+  padding: 0 40px;
+  background-color: var(--accent);
+  color: var(--light-bg-alt);
+  justify-self: center;
+  transition: 0.3s all;
+}
+
+.add-preference-modal > select {
+  font-size: 1.3em;
+  padding: 4px 8px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  width: 100%;
+  font-weight: 500;
+  margin-bottom: 32px;
+}
+
+.add-preference-modal > select:valid {
+  font-weight: normal !important;
+}
+
+.add-preference-modal > h1 {
+  margin: 0 0 16px;
+}
+
+.add-preference-modal > div > label > input {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.add-preference-modal > div > textarea {
+  width: 100%;
+  border: 2px solid var(--dark);
+  border-radius: 8px;
+  height: 150px;
+  font-size: 1.4em;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.add-preference-modal > button {
+  width: 100%;
+}
+
+@keyframes blink {
+  from {
+    background-color: var(--accent);
+    color: var(--light-bg-alt);
+  }
+  to {
+    background-color: var(--light-bg-alt);
+    color: var(--accent);
+  }
 }
