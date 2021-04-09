@@ -1,4 +1,5 @@
 let auth2
+let currentUser
 gapi.load('auth2', () => {
   auth2 = gapi.auth2.init({
     client_id: '245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com'
@@ -48,6 +49,7 @@ async function userChanged(user) {
     await loadAround(async () => {
       const verification = await verify(user)
       if (verification.status) {
+        currentUser = verification.user
         if (verification.user.given_name || verification.user.family_name) {
           username.innerText = (verification.user.given_name[0] || "") + (verification.user.family_name[0] || "")
         } else {
@@ -74,3 +76,5 @@ async function verify(user) {
   }).then(res => res.json())
   return res
 }
+
+signOutBtn.addEventListener("click", signOut)

@@ -6,6 +6,8 @@ const mongoose = require('mongoose')
 const dotenv = require('dotenv').config()
 const {OAuth2Client} = require('google-auth-library')
 const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID)
+const fs = require("fs")
+const md5 = require("./md5.js")
 
 // Constants \\
 const DBName = "data"
@@ -27,19 +29,19 @@ const userSchema = new mongoose.Schema({
       id: String,
       name: String,
       period: String,
+      preferences: [],
       students: [
         {
           id: String,
           first: String,
           last: String,
           middle: String,
-          preferences: [
-            {
-              name: String,
-              type: Number,
-              value: String
-            }
-          ]
+          preferences: {
+            studentLike: [],
+            studentDislike: [],
+            topicLike: [],
+            topicDislike: [],
+          }
         }
       ],
       groupings: [
@@ -58,14 +60,33 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema)
 
 // Express \\
+const sendFileOptions = {
+    root: __dirname + '/static',
+    dotfiles: 'deny'
+}
 
 app.use(bodyParser.json())
 
 //Routing
 app.get('/', async (req, res) => {
-  res.sendFile(__dirname + '/static/index.html')
+  res.sendFile('/index.html', sendFileOptions)
 })
 
+app.get("/form/:userId/:classId", async (req, res) => {
+  const user = await User.findOne({id: req.params.userId}).exec()
+  if (user) {
+    const classObj = user.classes.find(c => c.id == req.params.classId)
+    if (classObj) {
+      res.sendFile('/form/index.html', sendFileOptions)
+    } else {
+      res.sendFile('/404/index.html', sendFileOptions)
+    }
+  } else {
+    res.sendFile('/404/index.html', sendFileOptions)
+  }
+})
+
+//Endpoints
 app.get("/login", async (req, res) => {
   const verification = await verifyUser(req.header("token"))
   const user = await User.findOne({id: verification.user.sub}).exec()
@@ -76,6 +97,44 @@ app.get("/login", async (req, res) => {
     res.json({...verification, classes: []})
   } else {
     res.json({...verification, classes: user.classes})
+  }
+})
+
+app.get("/formData", async (req, res) => {
+  const user = await User.findOne({id: req.query.user}).exec()
+  if (user) {
+    const classObj = user.classes.find(c => c.id == req.query.class)
+    if (classObj) {
+      res.json({status: true, preferences: classObj.preferences, className: classObj.name, period: classObj.period, students: classObj.students.map(s => (
+        {name: `${s.first} ${s.middle ? `${s.middle}. ` : ""}${s.last}`, id: md5(s.id)}
+      ))})
+    } else {
+      res.json({status: false, error: "No Form Found"})
+    }
+  } else {
+    res.json({status: false, error: "No Form Found"})
+  }
+})
+
+app.post("/saveStudentPreferences", async (req, res) => {
+  const user = await User.findOne({id: req.body.userId, classes: {$elemMatch: {id: req.body.id}}}).exec()
+  if (user) {
+    const classObj = user.classes.find(c => c.id == req.body.id)
+    const student = classObj.students.find(s => s.id == req.body.studentId)
+    if (student) {
+      for (const preference of req.body.preferences) {
+        if (["studentLike", "studentDislike"].includes(preference.type)) {
+          preference.inputs = preference.inputs.map(id => classObj.students.find(s => id == md5(s.id)).id)
+        }
+        student.preferences[preference.type] = preference
+      }
+      await user.save()
+      res.json({status: true})
+    } else {
+      res.json({status: false, error: "No Student Found"})
+    }
+  } else {
+    res.json({status: false, error: "No Class Found"})
   }
 })
 
@@ -172,9 +231,10 @@ app.post("/deleteGroup", async (req, res) => {
     const user = await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.id}}}).exec()
     if (user) {
       const groupings = user.classes.find(c => c.id == req.body.id).groupings
-      if (groupings) {
-        groupings.splice(groupings.indexOf(groupings.find(g => g.id == req.body.groupingId)), 1)
-      await user.save()
+      const grouping = groupings.find(g => g.id == req.body.groupingId)
+      if (grouping) {
+        groupings.splice(groupings.indexOf(grouping), 1)
+        await user.save()
       res.json({status: true})
       } else {
         res.json({status: false, error: "No Group Found"})
@@ -185,9 +245,49 @@ app.post("/deleteGroup", async (req, res) => {
   }
 })
 
-app.use((req, res) => {
-  res.sendFile(__dirname + req.url)
+app.post("/addPreference", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.id}}}).exec()
+    if (user) {
+      user.classes.find(c => c.id == req.body.id).preferences.push(req.body.preference)
+      await user.save()
+      res.json({status: true})
+    } else {
+      res.json({status: false, error: "No Class Found"})
+    }
+  }
 })
+
+app.post("/deletePreference", async (req, res) => {
+  const verification = await verifyUser(req.header("token"))
+  if (verification.status) {
+    const user = await User.findOne({id: verification.user.sub, classes: {$elemMatch: {id: req.body.id}}}).exec()
+    if (user) {
+      const preferences = user.classes.find(c => c.id == req.body.id).preferences
+      const preference = preferences.find(p => p.id == req.body.preferenceId)
+      if (preference) {
+        preferences.splice(preferences.indexOf(preference), 1)
+        await user.save()
+        res.json({status: true})
+      } else {
+        res.json({status: false, error: "No Preference Found"})
+      }
+    } else {
+      res.json({status: false, error: "No Class Found"})
+    }
+  }
+})
+
+app.use((req, res) => {
+  res.sendFile(req.url, sendFileOptions, (e) => {
+    if (e) {
+      res.status(404).sendFile('/404/index.html', sendFileOptions)
+    }
+  })
+})
+
+app
 
 //Listen
 http.listen(process.env.PORT, function(){

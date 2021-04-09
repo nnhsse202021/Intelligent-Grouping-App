@@ -1,12 +1,12 @@
 <head>
 	<title>Intelligent Grouping</title>
 	<meta name="google-signin-client_id" content="245771948528-c31us1t1k3l0tpmlcm2kq8jd33jmd6rj.apps.googleusercontent.com">
-  <link rel="icon" type="image/svg+xml" href="/static/images/blue-bg.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/blue-bg.svg">
 	<link rel="preconnect" href="https://fonts.gstatic.com">
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.0/css/all.css">
 	<link rel="stylesheet"
-	 type="text/css" href="/static/style.css" />
+	 type="text/css" href="/style.css" />
 </head>
 
 <body>
@@ -15,10 +15,10 @@
 	</div>
 
 
-	<img id="spinner" src="/static/images/spinner.svg">
+	<img id="spinner" src="/images/spinner.svg">
 
   <div id = "login-container">
-    <img id="logo" src = "/static/images/blue-bg.svg">
+    <img id="logo" src = "/images/blue-bg.svg">
       <h1 id="title">Intelligent Grouping</h1>
     <div id="login-btn"></div>
   </div>
@@ -40,7 +40,7 @@
     </div>
     
     <div id="dashboard">
-      <img id="app-spinner" src="/static/images/spinner.svg">
+      <img id="app-spinner" src="/images/spinner.svg">
       <div id="welcome-sec" class="section visible">
         <h1 id="welcome">Welcome!</h1>
       </div>
@@ -50,8 +50,10 @@
           <h1 id="info-panel-class" class="medium"></h1>
           <p id="info-panel-num-students"></p>
           <p id="info-panel-num-groups"></p>
-          <button id="edit-class" class="button">Edit Class</button>
-          <button id="delete-class" class="button">Delete Class</button>
+          <div id="class-actions">
+            <button id="edit-class" class="button"><i class="fa fa-pencil-alt"></i></button>
+            <button id="delete-class" class="button"><i class="fa fa-trash"></i></button>
+          </div>
         </div>
 
         <div id="groups-panel" class = "panel">
@@ -67,7 +69,10 @@
         </div>
         
         <div id="preferences-panel" class = "panel">
-          <h1 id="preferences-title" class="medium">Preferences (WIP)</h1>
+          <h1 id="preferences-title" class="medium">Student Choices</h1>
+          <div id="preferences-list"></div>
+          <button id="add-preference" class="button">Add Choice</button>
+          <button id="copy-form-link" class="button">Copy Form Link</button>
         </div>
         
         
@@ -118,9 +123,13 @@
   </div>
 
   <script src="https://apis.google.com/js/platform.js"></script>
-  <script src="/static/md5.js"></script>
-  <script src="/static/ui.js"></script>
-  <script src="/static/auth.js"></script>
-  <script src="/static/script.js"></script>
+  <script src="/md5.js"></script>
+  <script src="/ui.js"></script>
+  <script src="/elements.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/classes.js"></script>
+  <script src="/groupings.js"></script>
+  <script src="/preferences.js"></script>
+  <script src="/script.js"></script>
   <script> </script>
 </body>
