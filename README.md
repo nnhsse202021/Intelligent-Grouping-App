@@ -79,10 +79,10 @@ sudo pm2 start index.js
 
 18. Verify that the node server is running: `sudo pm2 list`
 19. Configure pm2 to automatically run when the EC2 instance restarts: `sudo pm2 startup`
-20. Add a crontab entry to pull from GitHub every minute: `crontab -e`
+20. Add a crontab entry to pull from GitHub every 15 minutes: `crontab -e`
 
 ```
-*/1 * * * * cd /home/ubuntu/Intelligent-Grouping-App && git pull
+*/15 * * * * cd /home/ubuntu/Intelligent-Grouping-App && git pull
 ```
 
 21. Restart the node server: `sudo pm2 restart index`
