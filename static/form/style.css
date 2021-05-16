@@ -237,3 +237,14 @@ label > span {
 .invalid {
   border-color: var(--error) !important;
 }
+
+#complete-sec {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#thanks {
+  font-size: 4rem;
+}

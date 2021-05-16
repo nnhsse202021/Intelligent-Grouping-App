@@ -198,7 +198,7 @@ body {
   grid-area: 1 / 2 / 2 / 4;
   display: flex;
   flex-direction: row;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   padding: 0 25px;
 }
@@ -441,6 +441,27 @@ body {
   height: 250px;
 }
 
+.select-term-modal {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+
+.select-term-modal > button {
+  display: flex;
+  text-align: center;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 45%;
+  height: 100%;
+  padding: 16px;
+  font-size: 2.5em;
+  font-weight: 500;
+}
+
 .add-class-modal > button {
   display: flex;
   text-align: center;
@@ -582,6 +603,10 @@ h1 {
   width: 175px;
 }
 
+.email-input {
+  width: 325px;
+}
+
 .remove-student {
   cursor: pointer
 }
@@ -686,6 +711,7 @@ h1 {
 
 #ungrouped-students-list {
   border-left: 1px solid var(--light-gray);
+  border-bottom: 1px solid var(--light-gray);
   grid-area: 2 / 1 / 3 / 2;
   display: flex;
   flex-direction: column;
@@ -693,14 +719,28 @@ h1 {
   align-items: flex-start;
   padding: 20px;
   overflow-y: auto;
+  border-radius: 8px 0 0 8px;
+  height: calc(100vh - 450px);
+  transition: 0.3s all;
+}
+
+#excluded-students-list {
+  border-left: 1px solid var(--error);
+  border-top: 1px solid var(--error);
+  grid-area: 3 / 1 / 4 / 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 20px;
+  overflow-y: auto;
   border-top-left-radius: 8px;
-  height: calc(100vh - 250px);
   transition: 0.3s all;
 }
 
 #group-sidebar {
   display: grid;
-  grid-template-rows: 175px auto;
+  grid-template-rows: 175px auto 200px;
   grid-area: 1 / 2 / 2 / 3;
 }
 
@@ -732,6 +772,7 @@ h1 {
 
 .arrange-options-modal > div > button {
   width: 100%;
+  margin-bottom: 12px;
 }
 
 .random-options-modal {
@@ -854,7 +895,12 @@ h1 {
 #ungrouped-students-list.accepting {
   cursor: pointer;
   border-color: var(--accent);
-  border-width: 5px;
+  border-width: 4px;
+}
+
+#excluded-students-list.accepting {
+  cursor: pointer;
+  border-width: 4px;
 }
 
 .group-student-list:empty {
@@ -863,7 +909,12 @@ h1 {
 
 #group-name-input {
   font-size: 1.3em;
+  width: 100%;
   background-color: var(--light-bg);
+}
+
+#group-actions-div > label {
+  width: 90%;
 }
 
 #group-actions-div span {
@@ -970,6 +1021,21 @@ h1 {
   width: 100%;
 }
 
+#open-tutorial {
+  color: white;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+#tutorial-sec {
+  padding: 25px;
+}
+
+#tutorial-panel {
+  overflow: auto;
+  height:100%
+}
+
 @keyframes blink {
   from {
     background-color: var(--accent);
@@ -979,4 +1045,8 @@ h1 {
     background-color: var(--light-bg-alt);
     color: var(--accent);
   }
+}
+
+#open-tutorial {
+  cursor: pointer;
 }
