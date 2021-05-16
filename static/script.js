@@ -27,5 +27,6 @@ function setState(mode, info={}) {
 function resetApp() {
   username.innerText = ""
   clearDiv(classListDiv)
+  switchSection(welcomeSection)
   classes = []
 }

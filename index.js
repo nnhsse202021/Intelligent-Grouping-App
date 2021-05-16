@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema({
           first: String,
           last: String,
           middle: String,
+          email: String,
           preferences: {
             studentLike: [],
             studentDislike: [],
@@ -48,6 +49,7 @@ const userSchema = new mongoose.Schema({
         {
           id: String,
           name: String,
+          excluded: [],
           groups: [[String]]
         }
       ]
@@ -96,6 +98,9 @@ app.get("/login", async (req, res) => {
     })
     res.json({...verification, classes: []})
   } else {
+    // console.log(user.classes[0].preferences)
+    // console.log(user.classes[0].students[0].preferences.studentLike[0].inputs)
+    // console.log(user.classes[0].students[0].preferences.topicLike[0].inputs)
     res.json({...verification, classes: user.classes})
   }
 })
@@ -194,9 +199,9 @@ app.post("/randomGroups", async (req, res) => {
   if (verification.status) {
     const user = await User.findOne({id: verification.user.sub}).exec()
     if (req.body.type == 0) {
-      res.json({status: true, groups: makeGroupsByNumGroups(user.classes.find(c => c.id == req.body.id).students.map(s => s.id), req.body.num)})
+      res.json({status: true, groups: makeGroupsByNumGroups(user.classes.find(c => c.id == req.body.id).students.map(s => s.id).filter(s => !req.body.excluded.includes(s)), req.body.num)})
     } else {
-      res.json({status: true, groups: makeGroupsByNumStudents(user.classes.find(c => c.id == req.body.id).students.map(s => s.id), req.body.num)})
+      res.json({status: true, groups: makeGroupsByNumStudents(user.classes.find(c => c.id == req.body.id).students.map(s => s.id).filter(s => !req.body.excluded.includes(s)), req.body.num)})
     }
   }
 })

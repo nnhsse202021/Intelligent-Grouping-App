@@ -21,6 +21,8 @@ function constructClassFromManual() {
           student.middle = input.value
         } else if (input.classList.contains("student-id-input")) {
           student.id = input.value
+        } else if (input.classList.contains("email-input")) {
+          student.email = input.value
         }
       }
       classObj.students.push(student)
@@ -31,9 +33,9 @@ function constructClassFromManual() {
 
 async function constructClassesFromFile(file) {
   let data = await file.text()
-  const classObjs = []
-  data = data.split("\n").map(r => r.split(","))
-  const required = ["Period","Course Name","ID","Student Last Name","Student First Name","Student Middle Name"]
+  const classObjs = {}
+  data = data.split("\n").map(r => r.split(/(?!\B"[^"]*),(?![^"]*"\B)/g))
+  const required = ["Term", "Period","Course Name","Student ID","Last Name","First Name","Middle Name"]
 
   for(const element of required) {
     if (!data[0].includes(element)) {
@@ -44,9 +46,15 @@ async function constructClassesFromFile(file) {
   data = data.slice(1, data.length - 1)
 
   for (const row of data) {
+    if (!classObjs[row[0]]) {
+      classObjs[row[0]] = []
+    }
+  }
+
+  for (const row of data) {
     let existing
     const hashedId = md5(row[3] + row[1])
-    for(const classObj of classObjs) {
+    for(const classObj of classObjs[row[0]]) {
       if (classObj.id == hashedId) {
         existing = classObj
       }      
@@ -54,32 +62,44 @@ async function constructClassesFromFile(file) {
 
     if (existing) {
       existing.students.push({
-        id: row[4],
-        first: row[6],
-        last: row[5],
-        middle: row[7][0],
-        preferences: {}
+        id: row[5],
+        first: row[7],
+        last: row[6],
+        middle: row[8][0] ? row[8][0] : "",
+        email: row[10],
+        preferences: {
+          studentLike: [],
+          studentDislike: [],
+          topicLike: [],
+          topicDislike: [],
+        }
       })
     } else {
-      classObjs.push({
+      classObjs[row[0]].push({
         id: hashedId,
         name: row[3],
         period: +row[1],
         preferences: [],
         students: [
           {
-            id: row[4],
-            first: row[6],
-            last: row[5],
-            middle: row[7] ? row[7][0] : "",
-            preferences: {}
+            id: row[5],
+            first: row[7],
+            last: row[6],
+            middle: row[8] ? row[8][0] : "",
+            email: row[10],
+            preferences: {
+              studentLike: [],
+              studentDislike: [],
+              topicLike: [],
+              topicDislike: [],
+            }
           }
         ],
         groupings: []
       })
     }   
   }
-  
+  console.log(classObjs)
   return {valid: true, classObjs: classObjs}
 }
 
@@ -170,15 +190,30 @@ async function uploadClass() {
     const classesResult = await constructClassesFromFile(uploadClassInput.files[0])
     uploadClassInput.value = null
     if (classesResult.valid) {
-      const saveResult = await saveNewClasses(classesResult.classObjs)
-      if (saveResult.status) {
-        for (const classObj of saveResult.newClasses) {
-          addClass(classObj)
+      modalExit()
+      createModal("small", m => {
+        m.classList.add("add-class-modal")
+        for (const term in classesResult.classObjs) {
+          const button = document.createElement("button")
+          button.innerText = term
+          button.classList = "button"
+          m.appendChild(button)
+          button.addEventListener("click", async () => {
+            startLoad()
+            const saveResult = await saveNewClasses(classesResult.classObjs[term])
+            if (saveResult.status) {
+              for (const classObj of saveResult.newClasses) {
+                addClass(classObj)
+              }
+              modalExit()
+            } else {
+              createError(saveResult.error)
+              modalExit()
+            }
+            endLoad()
+          })
         }
-        modalExit()
-      } else {
-        createError(saveResult.error)
-      }
+      })
     } else {
       createError("Invalid File")
     }
@@ -243,10 +278,11 @@ function editClass(classObj) {
 function addStudentInputs(student) {
   const studentInfoContainer = document.createElement("div")
   studentInfoContainer.classList = "student-info-container"
-  studentInfoContainer.appendChild(createPlaceholderInput("First Name", "first-name-input", student ? student.first : ""))
-  studentInfoContainer.appendChild(createPlaceholderInput("Last Name", "last-name-input", student ? student.last : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("First Name *", "first-name-input", student ? student.first : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("Last Name *", "last-name-input", student ? student.last : ""))
   studentInfoContainer.appendChild(createPlaceholderInput("Middle Initial", "middle-initial-input", student ? student.middle : ""))
-  studentInfoContainer.appendChild(createPlaceholderInput("ID", "student-id-input", student ? student.id : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("ID *", "student-id-input", student ? student.id : ""))
+  studentInfoContainer.appendChild(createPlaceholderInput("Email", "email-input", student ? student.email : ""))
   const removeStudent = document.createElement("i")
   removeStudent.classList = "fas fa-times-circle fa-2x remove-student"
   removeStudent.addEventListener("click", () => {
@@ -277,7 +313,7 @@ function validateClassInputs() {
     if (!inputGroup.classList.contains("sizeholder")) {
       for (let input of Array.from(inputGroup.children).slice(0,-1)) {
         input = input.children[0]
-        if (!input.classList.contains("middle-initial-input") && input.value == "") {
+        if (!input.classList.contains("middle-initial-input") && !input.classList.contains("email-input") && input.value == "") {
           input.classList.add("invalid")
           status = {valid: false, error: "Please fill out all fields"}
         } else {
