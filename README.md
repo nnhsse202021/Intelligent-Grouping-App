@@ -9,6 +9,7 @@ The Intelligent Grouping web application is a website designed to provide teache
 * Generate random groupings of a specified number of groups or group size.
 * Exclude users from a group in case of absence or other purposes (like TAs)
 * Input user preferences through automatically generated forms
+* Easy-to-find utorial in the top right corner of all screens, accessible by a single click
 ## Instructions:
 * After the website finishes loading, simply press the "Sign in with Google" button and sign in using whatever email you wish, keeping in mind that that email is your account for this website.
   * Currently only naperville203.org organization emails are permitted
@@ -44,3 +45,31 @@ The Intelligent Grouping web application is a website designed to provide teache
   * Enter your student ID into the Student ID field on the form.
   * Use the dropdown menus to rank other students and topics in the order in which you would rather not or would rather have as a part of your group.
   * Submit the form.
+* Instructions for those who wish to use their newly generated preferences.
+  * Follow the same steps as the steps for random grouping until you get to the "Choose an Arrangement" prompt.
+  * Instead of selecting "random groupings" select "preferences" and fill out the information shown, i.e. either the amount of desired groups or the number of people in each group.
+  * The groups will be automatically generated just like in random generation, after clicking "submit."
+## Internal Configuration (gene.js):
+* In the aformentioned file, there are options provided to allow for adjustment of the genetic algorithm for tuning purposes.
+  * Quarter Size: 
+    * Since the algorithm works with sections as small as one quarter of the population, this is how you set up the population size of each generation. As can be inferred by the name, this is 1/4th the amount of groupings you want per generation.
+  * Free Iterations:
+    * This genetic algorithm uses a simplified escape condition that stops upon reaching a certain amount of failures (i.e. generations without improvement), but also has a fixed number of generations which the alogirthm is allowed to run unimpeded (i.e. without counting the amount of failures). Adjust this number to adjust the amount of iterations the algorithm goes before counting.
+  * Escape Iterations:
+    * As mentioned for Free Iterations, the escape condition for the algorithm is a certain amount of failures in a row after a certain amount of iterations. This is that "certain amount of failures in a row." Adjust this to change that value.
+  * Mutation Probability:
+    * In order to introduce more variety and diversity into the population, a random amount of generations in a bred grouping get mutated before the next scoring round, and this value is the probability of any given grouping being chosen to be mutated.
+  * Mutation Proportion:
+    * In order to determine how much you change per mutation, this value is used to calculate the amount of pairs to swap in order to get as close to this value difference between the original grouping and the final grouping after mutation.
+  * Student Like Base:
+    * Scoring algorithm is done based on an exponential and summative formula, where each student in a like/dislike list increments/decrements the total score by a specific numerical base (student like base for this case since this is for the like list) to the total amount of students in the like/dislike list minus the ranking (descending order starting from zero as 1st place)th power.
+  * Student Dislike Base:
+    * Same concept as Student Like base except this is done for the amount decremented per student found in the dislike list.
+## Known Issues
+* Genetic Algorithm is not fine-tuned yet, so it may not be perfect or accurate enough to satisfy everything, but it does at least work slightly better than randomization at this point.
+* "Topic" is an option in preferences but does not exist in the actual application yet.
+## Remaining User Stories
+* As a teacher, I want to be able to save student groups so that I can see a history of who everyone has been with and regroup based on past grouping activities arrangements so that they can interact with different members of the class
+* I want to be able to collect not only student preferences but also preferred roles within each group
+* As a teacher, I want to to be able to upload multiple file types of class rosters
+* As a teacher, I want to be able to access and use the site across multiple platforms and screen resolutions

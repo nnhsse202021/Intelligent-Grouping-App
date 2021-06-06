@@ -192,10 +192,10 @@ async function uploadClass() {
     if (classesResult.valid) {
       modalExit()
       createModal("small", m => {
-        m.classList.add("add-class-modal")
+        m.classList.add("select-term-modal")
         for (const term in classesResult.classObjs) {
           const button = document.createElement("button")
-          button.innerText = term
+          button.innerText = `Term\n${term.match(/\d+/)[0]}`
           button.classList = "button"
           m.appendChild(button)
           button.addEventListener("click", async () => {

@@ -110,7 +110,7 @@ function editGrouping(grouping) {
     switchSection(editGroupSection)
     setState(6, {id: state.info.id, groupingId: grouping.id})
   } else {
-    statusTitle.innerText = "Create Group"
+    statusTitle.innerText = "Create Grouping"
     groupNameInput.value = ""
     clearDiv(ungroupedStudentsListDiv)
     clearDiv(excludedStudentsListDiv)
