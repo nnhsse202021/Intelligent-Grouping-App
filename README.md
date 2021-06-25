@@ -73,3 +73,69 @@ The Intelligent Grouping web application is a website designed to provide teache
 * I want to be able to collect not only student preferences but also preferred roles within each group
 * As a teacher, I want to to be able to upload multiple file types of class rosters
 * As a teacher, I want to be able to access and use the site across multiple platforms and screen resolutions
+### Production Server Deployment
+1. Create a new EC2 instance used on Ubuntu.
+2. Open ports for HTTP and HTTPS when walking through the EC2 wizard.
+3. Generate a key pair for this EC2 instance. Download and save the private key, which is needed to connect to the instance in the future.
+4. After the EC2 instance is running, click on the Connect button the EC2 Management Console for instructions on how to ssh into the instance.
+5. On the EC2 instance, [install](https://github.com/nodesource/distributions/blob/master/README.md) Node.js v12
+
+```
+curl -fsSL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+6. On the EC2 instance, install nginx: `sudo apt-get -y install nginx`
+7. Create a reverse proxy for the Intelligent Grouping App node server. In the file /etc/nginx/sites-enabled/intelligentgrouping:
+
+```
+server {
+	# listen on port 80 (http)
+	listen 80;
+	server_name intelligentgrouping.nnhsse.org;
+
+	# write access and error logs to /var/log
+	access_log /var/log/intelligentgrouping_access.log;
+	error_log /var/log/intelligentgrouping_error.log;
+
+	location / {
+		# forward application requests to the node server
+		proxy_pass http://localhost:8080;
+		proxy_redirect off;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	}
+}
+```
+
+8. Restart the nginx server: `sudo service nginx reload`
+9. Install and configure [certbot](https://certbot.eff.org/lets-encrypt/ubuntufocal-nginx)
+10. Clone this repository from GitHub.
+11. Inside of the directory for this repository install the node dependencies: `npm install`
+15. Update the .env file:
+
+```
+DBPASS=!!!
+CLIENT_SECRET=!!!
+CLIENT_ID=!!!
+PORT=8080
+```
+
+16. Update Google Cloud Platform is allow connections from new domain (intelligentgrouping.nnhsse.org)
+17. Install Production Manager 2, which is used to keep the node server running and restart it when changes are pushed to master:
+
+```
+sudo npm install pm2 -g
+sudo pm2 --name intelligentgrouping start index.js
+```
+
+18. Verify that the node server is running: `sudo pm2 list`
+19. Configure pm2 to automatically run when the EC2 instance restarts: `sudo pm2 startup`
+20. Add a crontab entry to pull from GitHub every 15 minutes: `crontab -e`
+
+```
+*/15 * * * * cd /home/ubuntu/Intelligent-Grouping-App && git pull
+```
+
+21. Restart the node server: `sudo pm2 restart index`
