@@ -5,6 +5,7 @@ const classTitle = document.getElementById("class-title")
 const periodTitle = document.getElementById("period-title")
 const submit = document.getElementById("submit")
 const studentIdInput = document.getElementById("student-id-input")
+const completeSection = document.getElementById("complete-sec")
 
 startLoad()
 
@@ -66,7 +67,11 @@ fetch(`/formData?user=${form[0]}&class=${form[1]}`).then(res => res.json()).then
         })
         const saveResult = await saveStudentPreferences(form[0], form[1], studentIdInput.value, data.preferences)
         if (saveResult.status) {
-
+          hideFade(formSection)
+          showFade(completeSection)
+          setTimeout(() => {
+            formSection.style.display = "none"
+          }, 300)
         } else {
           createError(saveResult.error)
         }

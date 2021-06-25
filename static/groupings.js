@@ -83,6 +83,7 @@ function editGrouping(grouping) {
     statusTitle.innerText = "Edit Group"
     groupNameInput.value = ""
     clearDiv(ungroupedStudentsListDiv)
+    clearDiv(excludedStudentsListDiv)
     clearDiv(groupScatter)
     console.log(state.info.id)
     for (const student of classes[state.info.id].obj.students) {
@@ -97,13 +98,22 @@ function editGrouping(grouping) {
       })
       ungroupedStudentsListDiv.appendChild(studentContainer)
     }
+    for (const student of grouping.excluded) {
+      for (const addedStudent of Array.from(ungroupedStudentsListDiv.children)) {
+        if (addedStudent.id == student) {
+          excludedStudentsListDiv.appendChild(addedStudent)
+        }
+      }
+    }
     setGroups(grouping.groups)
     groupNameInput.value = grouping.name
     switchSection(editGroupSection)
     setState(6, {id: state.info.id, groupingId: grouping.id})
   } else {
-    statusTitle.innerText = "Create Group"
+    statusTitle.innerText = "Create Grouping"
+    groupNameInput.value = ""
     clearDiv(ungroupedStudentsListDiv)
+    clearDiv(excludedStudentsListDiv)
     clearDiv(groupScatter)
     for (const student of classes[state.info.id].obj.students) {
       const studentContainer = document.createElement("div")
@@ -123,7 +133,7 @@ function editGrouping(grouping) {
   }
 }
 
-function getRandomGroups(type, num, classId) {
+function getRandomGroups(type, num, classId, excluded) {
   return fetch("/randomGroups", {
     method: "POST",
     headers: {
@@ -133,7 +143,8 @@ function getRandomGroups(type, num, classId) {
     body: JSON.stringify({
       id: classId,
       type: type,
-      num: num
+      num: num,
+      excluded: excluded
     })
   }).then(res => res.json())
 }
@@ -189,7 +200,7 @@ function showArrangeStudentsModal() {
           startLoad()
           let gNum = document.getElementById("group-num-input")
           let sNum = document.getElementById("student-num-input")
-          const groupsResult = await getRandomGroups(gNum.value ? 0 : 1, gNum.value ? +gNum.value : +sNum.value, state.info.id)
+          const groupsResult = await getRandomGroups(gNum.value ? 0 : 1, gNum.value ? +gNum.value : +sNum.value, state.info.id, Array.from(excludedStudentsListDiv.children).map(e => e.id))
           setGroups(groupsResult.groups)
           document.removeEventListener("input", singleInput)
           e()
@@ -204,8 +215,71 @@ function showArrangeStudentsModal() {
         document.addEventListener("input", singleInput)
       })
     })
+    const genetic = document.createElement("button")
+    genetic.classList = "button"
+    genetic.innerText = "Preferences"
+    genetic.addEventListener("click", () => {
+      exit()
+      createModal("tall", (m, e) => {
+        m.classList.add("random-options-modal")
+        const groupNumForm = document.createElement("form")
+        groupNumForm.innerHTML += "<p>Create</p>"
+        const groupNum = document.createElement("input")
+        groupNum.required = true
+        groupNum.id = "group-num-input"
+        groupNumForm.appendChild(groupNum)
+        groupNumForm.innerHTML += "<p>groups</p>"
+
+        const or = document.createElement("h1")
+        or.classList = "medium"
+        or.innerText = "OR"
+
+        const studentNumForm = document.createElement("form")
+        studentNumForm.innerHTML += "<p>Create groups of</p>"
+        const studentNum = document.createElement("input")
+        studentNum.required = true
+        studentNum.id = "student-num-input"
+        studentNumForm.appendChild(studentNum)
+        studentNumForm.innerHTML += "<p>students</p>"
+
+        const submit = document.createElement("button")
+        submit.classList = "button"
+        submit.innerText = "Submit"
+        const singleInput = (e) => {
+          let gNum = document.getElementById("group-num-input")
+          let sNum = document.getElementById("student-num-input")
+          if ((e.target == gNum && gNum.value) || sNum.value != +sNum.value || sNum.value < 1) {
+            sNum.value = ""
+          }
+          if ((e.target == sNum && sNum.value) || gNum.value != +gNum.value || gNum.value < 1) {
+            gNum.value = ""
+          }
+        }
+        submit.addEventListener("click", async () => {
+          startLoad()
+          let gNum = document.getElementById("group-num-input")
+          let sNum = document.getElementById("student-num-input")
+          const includedStudents = classes[state.info.id].obj.students.filter(student => !Array.from(excludedStudentsListDiv.children).map(e => e.id).includes(student.id))
+
+          const groupsResult = startGenetic(includedStudents, classes[state.info.id].obj.preferences, gNum.value ? +gNum.value : +sNum.value, gNum.value ? true : false)
+          setGroups(groupsResult)
+          document.removeEventListener("input", singleInput)
+          e()
+          endLoad()
+        })
+
+        m.appendChild(groupNumForm)
+        m.appendChild(or)
+        m.appendChild(studentNumForm)
+        m.appendChild(submit)
+        
+        document.addEventListener("input", singleInput)
+      })
+    })
+
     modal.appendChild(title)
     optionsDiv.appendChild(random)
+    optionsDiv.appendChild(genetic)
     modal.appendChild(optionsDiv)
   })
 }
@@ -264,7 +338,8 @@ function constructGroupingFromUI() {
   return {
     id: md5(groupNameInput.value),
     name: groupNameInput.value,
-    groups: Array.from(groupScatter.children).filter(e => e.id != "add-group").map(e => Array.from(e.children[2].children).map(s => s.id))
+    groups: Array.from(groupScatter.children).filter(e => e.id != "add-group").map(e => Array.from(e.children[2].children).map(s => s.id)),
+    excluded: Array.from(excludedStudentsListDiv.children).map(e => e.id)
   }
 }
 
@@ -276,7 +351,8 @@ function validateGroups() {
     return {valid: false, error: "Please fill out all fields"}
   }
 
-  if (Object.values(classes).map(c => c.obj.groupings).flat().includes(groupNameInput.value)) {
+  if (Object.values(classes).map(c => c.obj.groupings).flat().map(grouping => grouping.name).includes(groupNameInput.value)) {
+    groupNameInput.classList.add("invalid")
     return {valid: false, error: "Duplicate Grouping Name"}
   }
 
@@ -300,6 +376,10 @@ function openAcceptStudent(student) {
     ungroupedStudentsListDiv.classList.add("accepting")
     ungroupedStudentsListDiv.addEventListener("click", acceptStudent)
   }
+  if (student.parentNode != excludedStudentsListDiv) {
+    excludedStudentsListDiv.classList.add("accepting")
+    excludedStudentsListDiv.addEventListener("click", acceptStudent)
+  }
   document.addEventListener("click", closeOutsideClick)
 } 
 
@@ -311,6 +391,8 @@ function closeOutsideClick(e) {
     }
   }
   if (ungroupedStudentsListDiv.contains(e.target)) {
+    close = false
+  } else if (excludedStudentsListDiv.contains(e.target)) {
     close = false
   }
 
@@ -328,6 +410,8 @@ function closeAcceptStudent(e) {
   }
   ungroupedStudentsListDiv.classList.remove("accepting")
   ungroupedStudentsListDiv.removeEventListener("click", acceptStudent)
+  excludedStudentsListDiv.classList.remove("accepting")
+  excludedStudentsListDiv.removeEventListener("click", acceptStudent)
   setTimeout(() => {
     state.info.student.classList.remove("selected")
     state.info.student = null
@@ -346,6 +430,8 @@ function addGroupingToList(grouping) {
   groupingContainer.id = grouping.id
   const groupingName = document.createElement("p")
   groupingName.innerText = `${grouping.name} (${grouping.groups.length})`
+  const exportZoom = document.createElement("i")
+  exportZoom.classList = "fa fa-video fa-2x"
   const deleteGroup = document.createElement("i")
   deleteGroup.classList = "fa fa-times fa-2x"
 
@@ -368,7 +454,20 @@ function addGroupingToList(grouping) {
     endLoad()
   })
 
+  let csvText = "Pre-assign Room Name,Email Address\n"
+  for (let i = 0; i < grouping.groups.length; i++) {
+    for (const stu of grouping.groups[i]) {
+      csvText += `group${i+1},${classes[state.info.id].obj.students.find(s => s.id == stu).email}\n`
+    }
+  }
+
+  exportZoom.addEventListener("click", async (e) => {
+    e.stopPropagation()
+    downloadCSV(`${grouping.name}.csv`, csvText)
+  })
+
   groupingContainer.appendChild(groupingName)
+  groupingContainer.appendChild(exportZoom)
   groupingContainer.appendChild(deleteGroup)
   groupingsList.appendChild(groupingContainer)
 } 
@@ -387,3 +486,16 @@ saveGroupBtn.addEventListener("click", async () => {
 arrangeStudentsBtn.addEventListener("click", showArrangeStudentsModal)
 
 addGroupBtn.addEventListener("click", addGroup)
+
+function downloadCSV(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
