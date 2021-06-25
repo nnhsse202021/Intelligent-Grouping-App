@@ -74,7 +74,7 @@ PORT=8080
 
 ```
 sudo npm install pm2 -g
-sudo pm2 start index.js
+sudo pm2 --name intelligentgrouping start index.js
 ```
 
 18. Verify that the node server is running: `sudo pm2 list`
